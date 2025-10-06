@@ -15,19 +15,19 @@
     <nav class="site-header__tabs" aria-label="Primary">
       <ul class="tabs" role="tablist">
         <li class="tabs__item" role="presentation">
-          <button class="tabs__button tabs__button--active" role="tab" aria-selected="true" aria-controls="tab-publishing" id="tab-publishing-trigger">Publishing House</button>
+          <button class="tabs__button tabs__button--active" role="tab" aria-selected="true" aria-controls="tab-panel" id="tab-publishing" data-tab="publishing">Publishing House</button>
         </li>
         <li class="tabs__item" role="presentation">
-          <button class="tabs__button" role="tab" aria-selected="false" aria-controls="tab-authors" id="tab-authors-trigger">For Authors</button>
+          <button class="tabs__button" role="tab" aria-selected="false" aria-controls="tab-panel" id="tab-authors" data-tab="authors">For Authors</button>
         </li>
         <li class="tabs__item" role="presentation">
-          <button class="tabs__button" role="tab" aria-selected="false" aria-controls="tab-self" id="tab-self-trigger">Self-publishing</button>
+          <button class="tabs__button" role="tab" aria-selected="false" aria-controls="tab-panel" id="tab-self" data-tab="selfPublishing">Self-publishing</button>
         </li>
         <li class="tabs__item" role="presentation">
-          <button class="tabs__button" role="tab" aria-selected="false" aria-controls="tab-bookstore" id="tab-bookstore-trigger">Bookstore</button>
+          <button class="tabs__button" role="tab" aria-selected="false" aria-controls="tab-panel" id="tab-bookstore" data-tab="bookstore">Bookstore</button>
         </li>
         <li class="tabs__item" role="presentation">
-          <button class="tabs__button" role="tab" aria-selected="false" aria-controls="tab-contact" id="tab-contact-trigger">Contact</button>
+          <button class="tabs__button" role="tab" aria-selected="false" aria-controls="tab-panel" id="tab-contact" data-tab="contact">Contact</button>
         </li>
       </ul>
     </nav>
@@ -42,25 +42,11 @@
       </ul>
     </aside>
     <section class="layout__content panels">
-      <article class="panels__panel panels__panel--active" id="tab-publishing" role="tabpanel" aria-labelledby="tab-publishing-trigger" tabindex="-1">
-        <h2 class="panels__title">Publishing House</h2>
-        <p class="panels__text">Highlight your publishing legacy, flagship imprints, and the creative vision that guides every release.</p>
-      </article>
-      <article class="panels__panel" id="tab-authors" role="tabpanel" aria-labelledby="tab-authors-trigger" hidden tabindex="-1">
-        <h2 class="panels__title">For Authors</h2>
-        <p class="panels__text">Outline submission guidelines, editorial support, and community resources for aspiring writers.</p>
-      </article>
-      <article class="panels__panel" id="tab-self" role="tabpanel" aria-labelledby="tab-self-trigger" hidden tabindex="-1">
-        <h2 class="panels__title">Self-publishing</h2>
-        <p class="panels__text">Showcase hybrid publishing packages, print-on-demand solutions, and marketing mentorship.</p>
-      </article>
-      <article class="panels__panel" id="tab-bookstore" role="tabpanel" aria-labelledby="tab-bookstore-trigger" hidden tabindex="-1">
-        <h2 class="panels__title">Bookstore</h2>
-        <p class="panels__text">Feature curated collections, seasonal highlights, and exclusive signed editions.</p>
-      </article>
-      <article class="panels__panel" id="tab-contact" role="tabpanel" aria-labelledby="tab-contact-trigger" hidden tabindex="-1">
-        <h2 class="panels__title">Contact</h2>
-        <p class="panels__text">Provide avenues for media inquiries, partnership opportunities, and author collaborations.</p>
+      <article class="panels__panel panels__panel--active" id="tab-panel" role="tabpanel" aria-labelledby="tab-publishing" aria-live="polite" tabindex="-1">
+        <h2 class="panels__title" id="tab-panel-title">Publishing House</h2>
+        <div class="panels__body" id="tab-panel-body">
+          <p class="panels__text">Highlight your publishing legacy, flagship imprints, and the creative vision that guides every release.</p>
+        </div>
       </article>
     </section>
   </main>
@@ -81,8 +67,65 @@
     </nav>
   </footer>
   <script>
+    const TAB_CONTENT = {
+      publishing: {
+        title: 'Publishing House',
+        body: [
+          'Highlight your publishing legacy, flagship imprints, and the creative vision that guides every release.'
+        ]
+      },
+      authors: {
+        title: 'For Authors',
+        body: [
+          'Outline submission guidelines, editorial support, and community resources for aspiring writers.'
+        ]
+      },
+      selfPublishing: {
+        title: 'Self-publishing',
+        body: [
+          'Showcase hybrid publishing packages, print-on-demand solutions, and marketing mentorship.'
+        ]
+      },
+      bookstore: {
+        title: 'Bookstore',
+        body: [
+          'Feature curated collections, seasonal highlights, and exclusive signed editions.'
+        ]
+      },
+      contact: {
+        title: 'Contact',
+        body: [
+          'Provide avenues for media inquiries, partnership opportunities, and author collaborations.'
+        ]
+      }
+    };
+
     const tabButtons = document.querySelectorAll('.tabs__button');
-    const panels = document.querySelectorAll('.panels__panel');
+    const tabPanel = document.getElementById('tab-panel');
+    const tabPanelTitle = document.getElementById('tab-panel-title');
+    const tabPanelBody = document.getElementById('tab-panel-body');
+
+    const renderTabContent = (tabKey, trigger, { focusPanel = true } = {}) => {
+      const content = TAB_CONTENT[tabKey];
+      if (!content) {
+        return;
+      }
+
+      tabPanelTitle.textContent = content.title;
+      tabPanelBody.innerHTML = '';
+
+      content.body.forEach((paragraph) => {
+        const paragraphElement = document.createElement('p');
+        paragraphElement.className = 'panels__text';
+        paragraphElement.textContent = paragraph;
+        tabPanelBody.appendChild(paragraphElement);
+      });
+
+      tabPanel.setAttribute('aria-labelledby', trigger.id);
+      if (focusPanel) {
+        tabPanel.focus({ preventScroll: true });
+      }
+    };
 
     tabButtons.forEach((button) => {
       button.addEventListener('click', () => {
@@ -95,21 +138,17 @@
           btn.setAttribute('aria-selected', 'false');
         });
 
-        panels.forEach((panel) => {
-          panel.classList.remove('panels__panel--active');
-          panel.hidden = true;
-        });
-
         button.classList.add('tabs__button--active');
         button.setAttribute('aria-selected', 'true');
-        const targetPanel = document.getElementById(button.getAttribute('aria-controls'));
-        if (targetPanel) {
-          targetPanel.hidden = false;
-          targetPanel.classList.add('panels__panel--active');
-          targetPanel.focus({ preventScroll: true });
-        }
+
+        renderTabContent(button.dataset.tab, button);
       });
     });
+
+    const activeTab = document.querySelector('.tabs__button[aria-selected="true"]') || tabButtons[0];
+    if (activeTab) {
+      renderTabContent(activeTab.dataset.tab, activeTab, { focusPanel: false });
+    }
 
     document.getElementById('current-year').textContent = new Date().getFullYear();
   </script>

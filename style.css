@@ -219,6 +219,11 @@ button:focus-visible {
   font-size: var(--font-size-600);
 }
 
+.panels__body {
+  display: grid;
+  gap: var(--space-sm);
+}
+
 .panels__text {
   margin: 0;
   font-size: var(--font-size-400);
