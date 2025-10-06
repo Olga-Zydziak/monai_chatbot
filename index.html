@@ -82,6 +82,22 @@
             <textarea class="content-manager__textarea" id="content-manager-body" name="content-manager-body" rows="8" required></textarea>
             <p class="content-manager__hint">Example bullet list:<br />- First highlight<br />- Second highlight</p>
           </div>
+          <fieldset class="content-manager__fieldset" data-manager-contact-fields hidden>
+            <legend class="content-manager__legend">Contact details</legend>
+            <div class="content-manager__field">
+              <label class="content-manager__label" for="content-manager-phone">Phone number</label>
+              <input class="content-manager__input" id="content-manager-phone" name="content-manager-phone" type="tel" placeholder="+48 123 456 789" />
+            </div>
+            <div class="content-manager__field">
+              <label class="content-manager__label" for="content-manager-email">Displayed email</label>
+              <input class="content-manager__input" id="content-manager-email" name="content-manager-email" type="email" placeholder="kontakt@twojwydawnictwo.pl" />
+            </div>
+            <div class="content-manager__field">
+              <label class="content-manager__label" for="content-manager-recipient">Form recipient email</label>
+              <input class="content-manager__input" id="content-manager-recipient" name="content-manager-recipient" type="email" placeholder="krzysiekz123@wp.pl" />
+            </div>
+            <p class="content-manager__hint">Update the recipient to match your support inbox. The contact form will submit to this address using a mail client.</p>
+          </fieldset>
           <div class="content-manager__actions">
             <button class="content-manager__button" type="submit">Update preview</button>
             <button class="content-manager__button content-manager__button--ghost" type="button" id="content-manager-reset">Reset form</button>
@@ -174,17 +190,16 @@
       contact: {
         title: 'Contact',
         body: [
-          'Provide tailored contact pathways for media, rights inquiries, partnership proposals, and aspiring authors.',
-          'Set expectations for response times and share links to FAQs or knowledge bases that address common questions upfront.',
-          {
-            type: 'list',
-            items: [
-              'General inbox: hello@yourpublishinghouse.com',
-              'Media & publicity: press@yourpublishinghouse.com',
-              'Author relations: authors@yourpublishinghouse.com'
-            ]
-          }
-        ]
+          'Reach out to our team for manuscript submissions, partnership opportunities, or tailored recommendations for your next release.',
+          'We aim to respond within two business days. For quick questions, explore our FAQ resources or connect via social channels.'
+        ],
+        contactDetails: {
+          phoneLabel: 'Phone',
+          phoneNumber: '+48 123 456 789',
+          emailLabel: 'Email',
+          emailAddress: 'kontakt@twojwydawnictwo.pl',
+          formRecipient: 'krzysiekz123@wp.pl'
+        }
       }
     };
 
@@ -223,6 +238,127 @@
           tabPanelBody.appendChild(listElement);
         }
       });
+
+      if (content.contactDetails) {
+        const contactWrapper = document.createElement('div');
+        contactWrapper.className = 'panels__contact';
+
+        const contactList = document.createElement('dl');
+        contactList.className = 'panels__contact-list';
+
+        const phoneTerm = document.createElement('dt');
+        phoneTerm.className = 'panels__contact-term';
+        phoneTerm.textContent = content.contactDetails.phoneLabel;
+        contactList.appendChild(phoneTerm);
+
+        const phoneValue = document.createElement('dd');
+        phoneValue.className = 'panels__contact-definition';
+        const phoneLink = document.createElement('a');
+        phoneLink.className = 'panels__contact-link';
+        const phoneHref = content.contactDetails.phoneNumber.replace(/[^+\d]/g, '');
+        phoneLink.href = phoneHref ? `tel:${phoneHref}` : '#';
+        phoneLink.textContent = content.contactDetails.phoneNumber;
+        phoneLink.rel = 'nofollow';
+        phoneValue.appendChild(phoneLink);
+        contactList.appendChild(phoneValue);
+
+        const emailTerm = document.createElement('dt');
+        emailTerm.className = 'panels__contact-term';
+        emailTerm.textContent = content.contactDetails.emailLabel;
+        contactList.appendChild(emailTerm);
+
+        const emailValue = document.createElement('dd');
+        emailValue.className = 'panels__contact-definition';
+        const emailLink = document.createElement('a');
+        emailLink.className = 'panels__contact-link';
+        emailLink.href = `mailto:${content.contactDetails.emailAddress}`;
+        emailLink.textContent = content.contactDetails.emailAddress;
+        emailValue.appendChild(emailLink);
+        contactList.appendChild(emailValue);
+
+        contactWrapper.appendChild(contactList);
+
+        const contactForm = document.createElement('form');
+        contactForm.className = 'panels__form';
+        contactForm.action = content.contactDetails.formRecipient ? `mailto:${content.contactDetails.formRecipient}` : '#';
+        contactForm.method = 'post';
+        contactForm.enctype = 'text/plain';
+        contactForm.noValidate = true;
+
+        const formFieldset = document.createElement('div');
+        formFieldset.className = 'panels__form-fields';
+
+        const nameField = document.createElement('div');
+        nameField.className = 'panels__form-field';
+        const nameLabel = document.createElement('label');
+        nameLabel.className = 'panels__form-label';
+        nameLabel.setAttribute('for', 'contact-name');
+        nameLabel.textContent = 'Your name';
+        const nameInput = document.createElement('input');
+        nameInput.className = 'panels__form-input';
+        nameInput.type = 'text';
+        nameInput.id = 'contact-name';
+        nameInput.name = 'name';
+        nameInput.required = true;
+        nameInput.placeholder = 'Jane Doe';
+        nameField.appendChild(nameLabel);
+        nameField.appendChild(nameInput);
+
+        const emailField = document.createElement('div');
+        emailField.className = 'panels__form-field';
+        const emailLabelEl = document.createElement('label');
+        emailLabelEl.className = 'panels__form-label';
+        emailLabelEl.setAttribute('for', 'contact-email');
+        emailLabelEl.textContent = 'Your email';
+        const emailInputField = document.createElement('input');
+        emailInputField.className = 'panels__form-input';
+        emailInputField.type = 'email';
+        emailInputField.id = 'contact-email';
+        emailInputField.name = 'email';
+        emailInputField.required = true;
+        emailInputField.placeholder = 'you@example.com';
+        emailField.appendChild(emailLabelEl);
+        emailField.appendChild(emailInputField);
+
+        const messageField = document.createElement('div');
+        messageField.className = 'panels__form-field panels__form-field--wide';
+        const messageLabel = document.createElement('label');
+        messageLabel.className = 'panels__form-label';
+        messageLabel.setAttribute('for', 'contact-message');
+        messageLabel.textContent = 'Message';
+        const messageTextarea = document.createElement('textarea');
+        messageTextarea.className = 'panels__form-textarea';
+        messageTextarea.id = 'contact-message';
+        messageTextarea.name = 'message';
+        messageTextarea.rows = 4;
+        messageTextarea.required = true;
+        messageTextarea.placeholder = 'Tell us more about your project…';
+        messageField.appendChild(messageLabel);
+        messageField.appendChild(messageTextarea);
+
+        formFieldset.appendChild(nameField);
+        formFieldset.appendChild(emailField);
+        formFieldset.appendChild(messageField);
+
+        const formActions = document.createElement('div');
+        formActions.className = 'panels__form-actions';
+        const submitButton = document.createElement('button');
+        submitButton.className = 'panels__form-button';
+        submitButton.type = 'submit';
+        submitButton.textContent = 'Send message';
+        formActions.appendChild(submitButton);
+
+        const formNote = document.createElement('p');
+        formNote.className = 'panels__form-note';
+        formNote.textContent = `Submitting opens your default mail app and sends the message to ${content.contactDetails.formRecipient}.`;
+
+        contactForm.appendChild(formFieldset);
+        contactForm.appendChild(formActions);
+        contactForm.appendChild(formNote);
+
+        contactWrapper.appendChild(contactForm);
+        tabPanelBody.appendChild(contactWrapper);
+      }
 
       tabPanel.setAttribute('aria-labelledby', trigger.id);
       if (focusPanel) {
@@ -300,17 +436,47 @@
     const managerBodyInput = document.getElementById('content-manager-body');
     const managerResetButton = document.getElementById('content-manager-reset');
     const managerStatus = document.getElementById('content-manager-status');
+    const managerContactFields = document.querySelector('[data-manager-contact-fields]');
+    const managerPhoneInput = document.getElementById('content-manager-phone');
+    const managerEmailInput = document.getElementById('content-manager-email');
+    const managerRecipientInput = document.getElementById('content-manager-recipient');
 
     const syncManagerForm = (tabKey) => {
       const content = TAB_CONTENT[tabKey];
       if (!content) {
         managerTitleInput.value = '';
         managerBodyInput.value = '';
+        if (managerContactFields) {
+          managerContactFields.hidden = tabKey !== 'contact';
+        }
+        if (managerPhoneInput) {
+          managerPhoneInput.value = '';
+        }
+        if (managerEmailInput) {
+          managerEmailInput.value = '';
+        }
+        if (managerRecipientInput) {
+          managerRecipientInput.value = '';
+        }
         return;
       }
 
       managerTitleInput.value = content.title;
       managerBodyInput.value = formatBodyForInput(content.body);
+      if (managerContactFields) {
+        managerContactFields.hidden = tabKey !== 'contact';
+      }
+      if (tabKey === 'contact' && content.contactDetails) {
+        if (managerPhoneInput) {
+          managerPhoneInput.value = content.contactDetails.phoneNumber || '';
+        }
+        if (managerEmailInput) {
+          managerEmailInput.value = content.contactDetails.emailAddress || '';
+        }
+        if (managerRecipientInput) {
+          managerRecipientInput.value = content.contactDetails.formRecipient || '';
+        }
+      }
       managerStatus.textContent = '';
     };
 
@@ -330,10 +496,31 @@
           return;
         }
 
-        TAB_CONTENT[tabKey] = {
+        const updatedContent = {
           title: titleValue,
           body: parseInputToBody(bodyValue)
         };
+
+        if (tabKey === 'contact') {
+          const phoneValue = managerPhoneInput?.value.trim() || '';
+          const displayEmailValue = managerEmailInput?.value.trim() || '';
+          const recipientValue = managerRecipientInput?.value.trim() || '';
+
+          if (!phoneValue || !displayEmailValue || !recipientValue) {
+            managerStatus.textContent = 'Please provide the phone number, display email, and recipient email for the contact section.';
+            return;
+          }
+
+          updatedContent.contactDetails = {
+            phoneLabel: 'Phone',
+            phoneNumber: phoneValue,
+            emailLabel: 'Email',
+            emailAddress: displayEmailValue,
+            formRecipient: recipientValue
+          };
+        }
+
+        TAB_CONTENT[tabKey] = updatedContent;
 
         const targetButton = document.querySelector(`.tabs__button[data-tab="${tabKey}"]`);
         if (targetButton) {
