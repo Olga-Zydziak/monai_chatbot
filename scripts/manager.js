@@ -47,14 +47,35 @@
   const contactFieldset = document.querySelector('[data-manager-contact]');
   const phoneInput = document.getElementById('manager-phone');
   const emailInput = document.getElementById('manager-email');
-  const recipientInput = document.getElementById('manager-recipient');
-  const endpointInput = document.getElementById('manager-endpoint');
   const submittingInput = document.getElementById('manager-submitting');
   const successInput = document.getElementById('manager-success');
   const errorInput = document.getElementById('manager-error');
   const outputTarget = document.getElementById('manager-output');
   const formElement = document.getElementById('content-manager-form');
   const clearButton = document.getElementById('manager-clear');
+
+  const buildFormEndpoint = (email) =>
+    email ? `https://formsubmit.co/ajax/${encodeURIComponent(email)}` : '';
+
+  const normaliseContactDetails = (details = {}) => {
+    const emailValue = details.emailAddress?.trim() || details.formRecipient?.trim() || '';
+    const phoneNumber = details.phoneNumber?.trim() || '';
+    const submittingMessage = details.submittingMessage || 'Sending your message…';
+    const successMessage = details.successMessage || 'Thank you! We will reply shortly.';
+    const errorMessage = details.errorMessage || 'Sorry, something went wrong. Please try again later.';
+
+    return {
+      phoneLabel: details.phoneLabel || 'Phone',
+      phoneNumber,
+      emailLabel: details.emailLabel || 'Email',
+      emailAddress: emailValue,
+      formRecipient: emailValue,
+      formEndpoint: buildFormEndpoint(emailValue),
+      submittingMessage,
+      successMessage,
+      errorMessage
+    };
+  };
 
   const formatBodyForInput = (body = []) =>
     body
@@ -120,11 +141,10 @@
       contactFieldset.hidden = !isContact;
 
       if (isContact) {
-        const details = content.contactDetails || {};
+        const details = normaliseContactDetails(content.contactDetails || {});
+        workingCopy[tabKey].contactDetails = JSON.parse(JSON.stringify(details));
         phoneInput.value = details.phoneNumber || '';
         emailInput.value = details.emailAddress || '';
-        recipientInput.value = details.formRecipient || '';
-        endpointInput.value = details.formEndpoint || '';
         submittingInput.value = details.submittingMessage || '';
         successInput.value = details.successMessage || '';
         errorInput.value = details.errorMessage || '';
@@ -150,26 +170,24 @@
 
     if (tabKey === 'contact') {
       const phoneValue = phoneInput.value.trim();
-      const displayEmail = emailInput.value.trim();
-      const recipientValue = recipientInput.value.trim();
-      const endpointValue = endpointInput.value.trim();
+      const emailValue = emailInput.value.trim();
 
-      if (!phoneValue || !displayEmail || !recipientValue) {
-        statusOutput.textContent = 'Please provide the phone number, displayed email, and recipient email for the contact section.';
+      if (!phoneValue || !emailValue) {
+        statusOutput.textContent = 'Please provide both the phone number and contact email for the Contact section.';
         return false;
       }
 
-      nextContent.contactDetails = {
-        phoneLabel: 'Phone',
+      const submittingMessage = submittingInput.value.trim() || 'Sending your message…';
+      const successMessage = successInput.value.trim() || 'Thank you! We will reply shortly.';
+      const errorMessage = errorInput.value.trim() || 'Sorry, something went wrong. Please try again later.';
+
+      nextContent.contactDetails = normaliseContactDetails({
         phoneNumber: phoneValue,
-        emailLabel: 'Email',
-        emailAddress: displayEmail,
-        formRecipient: recipientValue,
-        formEndpoint: endpointValue,
-        submittingMessage: submittingInput.value.trim() || 'Sending your message…',
-        successMessage: successInput.value.trim() || 'Thank you! We will reply shortly.',
-        errorMessage: errorInput.value.trim() || 'Sorry, something went wrong. Please try again later.'
-      };
+        emailAddress: emailValue,
+        submittingMessage,
+        successMessage,
+        errorMessage
+      });
     }
 
     workingCopy[tabKey] = nextContent;

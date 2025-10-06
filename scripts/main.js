@@ -89,6 +89,50 @@
     }
   };
 
+  const buildEndpoint = (details = {}) => {
+    const emailTarget = details.formRecipient || details.emailAddress;
+
+    if (details.formEndpoint) {
+      if (!emailTarget) {
+        return details.formEndpoint;
+      }
+      const expectedSegment = encodeURIComponent(emailTarget);
+      if (details.formEndpoint.includes(expectedSegment)) {
+        return details.formEndpoint;
+      }
+    }
+
+    if (!emailTarget) {
+      return '';
+    }
+
+    return `https://formsubmit.co/ajax/${encodeURIComponent(emailTarget)}`;
+  };
+
+  const normaliseContactDetails = (details = {}) => {
+    const emailAddress = (details.emailAddress || details.formRecipient || '').trim();
+    const phoneNumber = details.phoneNumber?.trim() || '';
+    const submittingMessage = details.submittingMessage || 'Sending your message…';
+    const successMessage = details.successMessage || 'Thank you! We will be in touch shortly.';
+    const errorMessage = details.errorMessage || 'Sorry, something went wrong. Please try again later.';
+
+    if (!emailAddress && !phoneNumber) {
+      return null;
+    }
+
+    return {
+      phoneLabel: details.phoneLabel || 'Phone',
+      phoneNumber,
+      emailLabel: details.emailLabel || 'Email',
+      emailAddress,
+      formRecipient: emailAddress,
+      formEndpoint: buildEndpoint({ ...details, emailAddress }),
+      submittingMessage,
+      successMessage,
+      errorMessage
+    };
+  };
+
   const buildContactSection = (details = {}) => {
     const contactWrapper = document.createElement('div');
     contactWrapper.className = 'panels__contact';
@@ -226,7 +270,7 @@
       name: nameField.input.value.trim(),
       email: emailField.input.value.trim(),
       message: messageField.input.value.trim(),
-      recipient: details.formRecipient || ''
+      recipient: details.formRecipient || details.emailAddress || ''
     });
 
     const validatePayload = (payload) => {
@@ -246,17 +290,7 @@
         return;
       }
 
-      const submissionPayload = {
-        name: payload.name,
-        email: payload.email,
-        message: payload.message
-      };
-
-      if (details.formRecipient) {
-        submissionPayload.recipient = details.formRecipient;
-      }
-
-      const endpoint = details.formEndpoint || '';
+      const endpoint = buildEndpoint(details);
       setStatusMessage(statusMessage, null, details.submittingMessage || 'Sending your message…');
       submitButton.disabled = true;
 
@@ -267,16 +301,29 @@
         }
 
         try {
+          const formData = new FormData();
+          formData.append('name', payload.name);
+          formData.append('email', payload.email);
+          formData.append('message', payload.message);
+          formData.append('_replyto', payload.email);
+          if (payload.recipient) {
+            formData.append('_to', payload.recipient);
+          }
+
           const response = await fetch(endpoint, {
             method: 'POST',
             headers: {
-              'Content-Type': 'application/json',
               Accept: 'application/json'
             },
-            body: JSON.stringify(submissionPayload)
+            body: formData
           });
 
           if (!response.ok) {
+            throw new Error('Request failed');
+          }
+
+          const result = await response.json().catch(() => null);
+          if (result && result.success === 'false') {
             throw new Error('Request failed');
           }
 
@@ -322,7 +369,11 @@
     });
 
     if (content.contactDetails) {
-      tabPanelBody.appendChild(buildContactSection(content.contactDetails));
+      const contactDetails = normaliseContactDetails(content.contactDetails);
+      if (contactDetails) {
+        content.contactDetails = contactDetails;
+        tabPanelBody.appendChild(buildContactSection(contactDetails));
+      }
     }
 
     tabPanel.setAttribute('aria-labelledby', trigger.id);

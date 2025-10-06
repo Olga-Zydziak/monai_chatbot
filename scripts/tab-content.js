@@ -70,8 +70,8 @@ window.PUBLISHING_TAB_CONTENT = {
       phoneNumber: '+48 123 456 789',
       emailLabel: 'Email',
       emailAddress: 'kontakt@twojwydawnictwo.pl',
-      formRecipient: 'krzysiekz123@wp.pl',
-      formEndpoint: 'https://formsubmit.co/ajax/krzysiekz123@wp.pl',
+      formRecipient: 'kontakt@twojwydawnictwo.pl',
+      formEndpoint: 'https://formsubmit.co/ajax/kontakt%40twojwydawnictwo.pl',
       submittingMessage: 'Sending your message…',
       successMessage: 'Dziękujemy! Odpowiemy w ciągu dwóch dni roboczych.',
       errorMessage: 'Przepraszamy, nie udało się wysłać wiadomości. Spróbuj ponownie później.'
