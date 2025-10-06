@@ -26,7 +26,7 @@
         <header class="content-manager__header">
           <div class="content-manager__intro">
             <h1 class="content-manager__title" id="content-manager-title">Quick Content Manager</h1>
-            <p class="content-manager__description">Update tab titles, narrative copy, and contact details without touching the codebase. Copy the generated configuration and paste it back into <code>scripts/tab-content.js</code> or your CMS.</p>
+            <p class="content-manager__description">Update tab titles, narrative copy, and contact details without touching the codebase. Changes are saved to this browser and reflected on the home page when reloaded.</p>
           </div>
           <p class="content-manager__notice" role="note">Separate paragraphs with a blank line. Start a line with “- ” to create bullet points. Contact settings appear when the Contact tab is selected.</p>
         </header>
@@ -84,6 +84,7 @@
           <div class="content-manager__actions">
             <button class="content-manager__button" type="submit">Update preview</button>
             <button class="content-manager__button content-manager__button--ghost" type="button" id="manager-reset">Reset form</button>
+            <button class="content-manager__button content-manager__button--danger" type="button" id="manager-clear">Clear saved changes</button>
           </div>
           <p class="content-manager__status" id="manager-status" role="status" aria-live="polite"></p>
         </form>

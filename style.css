@@ -9,6 +9,8 @@
   --color-border: rgba(244, 246, 255, 0.08);
   --color-success: #4cd7a6;
   --color-error: #ff6b81;
+  --color-error-muted: rgba(255, 107, 129, 0.12);
+  --color-error-muted-strong: rgba(255, 107, 129, 0.2);
 
   --font-family-base: 'Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   --font-size-300: 0.875rem;
@@ -590,6 +592,19 @@ input:focus-visible {
 .content-manager__button--ghost:focus-visible {
   background-color: var(--color-accent-muted);
   border-color: var(--color-accent);
+}
+
+.content-manager__button--danger {
+  background-color: var(--color-error-muted);
+  border-color: var(--color-error);
+  color: var(--color-error);
+}
+
+.content-manager__button--danger:hover,
+.content-manager__button--danger:focus-visible {
+  background-color: var(--color-error-muted-strong);
+  border-color: var(--color-error);
+  box-shadow: none;
 }
 
 .content-manager__status {

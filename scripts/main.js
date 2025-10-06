@@ -1,5 +1,54 @@
 (() => {
-  const TAB_CONTENT = window.PUBLISHING_TAB_CONTENT || {};
+  const DEFAULT_TAB_CONTENT = window.PUBLISHING_TAB_CONTENT || {};
+
+  const loadOverrides = () => {
+    try {
+      const storedValue = window.localStorage?.getItem('publishingTabContent');
+      return storedValue ? JSON.parse(storedValue) : {};
+    } catch (error) {
+      console.warn('Unable to load stored tab content overrides.', error);
+      return {};
+    }
+  };
+
+  const mergeContent = (base, overrides) => {
+    const merged = { ...base };
+    Object.entries(overrides || {}).forEach(([key, value]) => {
+      if (value == null) {
+        return;
+      }
+
+      const baseValue = base[key];
+
+      if (Array.isArray(value)) {
+        merged[key] = value.slice();
+        return;
+      }
+
+      if (typeof value === 'object') {
+        const nextValue = { ...(typeof baseValue === 'object' && !Array.isArray(baseValue) ? baseValue : {}), ...value };
+
+        if (Array.isArray(value.body)) {
+          nextValue.body = value.body.slice();
+        }
+
+        if (value.contactDetails || baseValue?.contactDetails) {
+          nextValue.contactDetails = {
+            ...(baseValue?.contactDetails || {}),
+            ...(value.contactDetails || {})
+          };
+        }
+
+        merged[key] = nextValue;
+        return;
+      }
+
+      merged[key] = value;
+    });
+    return merged;
+  };
+
+  const TAB_CONTENT = mergeContent(DEFAULT_TAB_CONTENT, loadOverrides());
 
   const tabButtons = document.querySelectorAll('.tabs__button');
   const tabPanel = document.getElementById('tab-panel');
@@ -283,6 +332,11 @@
   };
 
   tabButtons.forEach((button) => {
+    const content = TAB_CONTENT[button.dataset.tab];
+    if (content?.title) {
+      button.textContent = content.title;
+    }
+
     button.addEventListener('click', () => {
       if (button.getAttribute('aria-selected') === 'true') {
         return;

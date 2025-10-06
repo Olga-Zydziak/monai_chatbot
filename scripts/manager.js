@@ -1,5 +1,42 @@
 (() => {
-  const originalContent = window.PUBLISHING_TAB_CONTENT || {};
+  const DEFAULT_CONTENT = window.PUBLISHING_TAB_CONTENT || {};
+
+  const loadOverrides = () => {
+    try {
+      const storedValue = window.localStorage?.getItem('publishingTabContent');
+      return storedValue ? JSON.parse(storedValue) : {};
+    } catch (error) {
+      console.warn('Unable to load stored overrides.', error);
+      return {};
+    }
+  };
+
+  const saveOverrides = (content) => {
+    try {
+      window.localStorage?.setItem('publishingTabContent', JSON.stringify(content));
+      return true;
+    } catch (error) {
+      console.warn('Unable to persist overrides.', error);
+      return false;
+    }
+  };
+
+  const clearOverrides = () => {
+    try {
+      window.localStorage?.removeItem('publishingTabContent');
+      return true;
+    } catch (error) {
+      console.warn('Unable to clear stored overrides.', error);
+      return false;
+    }
+  };
+
+  const storedOverrides = loadOverrides();
+  const originalContent = { ...DEFAULT_CONTENT };
+  Object.entries(storedOverrides).forEach(([key, value]) => {
+    originalContent[key] = value;
+  });
+
   const workingCopy = JSON.parse(JSON.stringify(originalContent));
 
   const tabSelect = document.getElementById('manager-tab');
@@ -17,6 +54,7 @@
   const errorInput = document.getElementById('manager-error');
   const outputTarget = document.getElementById('manager-output');
   const formElement = document.getElementById('content-manager-form');
+  const clearButton = document.getElementById('manager-clear');
 
   const formatBodyForInput = (body = []) =>
     body
@@ -147,7 +185,12 @@
     const tabKey = tabSelect.value;
 
     if (updateWorkingCopy(tabKey)) {
-      statusOutput.textContent = 'Configuration updated. Copy the code below into scripts/tab-content.js.';
+      if (saveOverrides(workingCopy)) {
+        originalContent[tabKey] = JSON.parse(JSON.stringify(workingCopy[tabKey] || {}));
+        statusOutput.textContent = 'Preview updated. Refresh the home page to see your changes. They are stored only in this browser.';
+      } else {
+        statusOutput.textContent = 'Preview updated locally, but changes could not be saved for reuse in this browser.';
+      }
       renderOutput();
     }
   });
@@ -157,6 +200,40 @@
     workingCopy[tabKey] = JSON.parse(JSON.stringify(originalContent[tabKey] || {}));
     syncForm(tabKey);
     statusOutput.textContent = 'Form reset to the saved configuration.';
+    renderOutput();
+  });
+
+  clearButton?.addEventListener('click', () => {
+    if (clearOverrides()) {
+      Object.keys(workingCopy).forEach((key) => {
+        if (Object.prototype.hasOwnProperty.call(DEFAULT_CONTENT, key)) {
+          workingCopy[key] = JSON.parse(JSON.stringify(DEFAULT_CONTENT[key] || {}));
+        } else {
+          delete workingCopy[key];
+        }
+      });
+
+      Object.keys(originalContent).forEach((key) => {
+        if (Object.prototype.hasOwnProperty.call(DEFAULT_CONTENT, key)) {
+          originalContent[key] = JSON.parse(JSON.stringify(DEFAULT_CONTENT[key] || {}));
+        } else {
+          delete originalContent[key];
+        }
+      });
+
+      Object.keys(DEFAULT_CONTENT).forEach((key) => {
+        if (!Object.prototype.hasOwnProperty.call(workingCopy, key)) {
+          workingCopy[key] = JSON.parse(JSON.stringify(DEFAULT_CONTENT[key] || {}));
+        }
+        if (!Object.prototype.hasOwnProperty.call(originalContent, key)) {
+          originalContent[key] = JSON.parse(JSON.stringify(DEFAULT_CONTENT[key] || {}));
+        }
+      });
+      syncForm(tabSelect.value);
+      statusOutput.textContent = 'Stored changes removed. The manager now reflects the default configuration.';
+    } else {
+      statusOutput.textContent = 'Unable to clear stored changes. Please check your browser permissions.';
+    }
     renderOutput();
   });
 
