@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Publishing Portfolio</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="page">
+  <header class="page__header site-header">
+    <div class="site-header__branding">
+      <div class="site-header__logo" aria-label="Logo placeholder"></div>
+      <div class="site-header__hero"></div>
+    </div>
+    <nav class="site-header__tabs" aria-label="Primary">
+      <ul class="tabs" role="tablist">
+        <li class="tabs__item" role="presentation">
+          <button class="tabs__button tabs__button--active" role="tab" aria-selected="true" aria-controls="tab-panel" id="tab-publishing" data-tab="publishing">Publishing House</button>
+        </li>
+        <li class="tabs__item" role="presentation">
+          <button class="tabs__button" role="tab" aria-selected="false" aria-controls="tab-panel" id="tab-authors" data-tab="authors">For Authors</button>
+        </li>
+        <li class="tabs__item" role="presentation">
+          <button class="tabs__button" role="tab" aria-selected="false" aria-controls="tab-panel" id="tab-self" data-tab="selfPublishing">Self-publishing</button>
+        </li>
+        <li class="tabs__item" role="presentation">
+          <button class="tabs__button" role="tab" aria-selected="false" aria-controls="tab-panel" id="tab-bookstore" data-tab="bookstore">Bookstore</button>
+        </li>
+        <li class="tabs__item" role="presentation">
+          <button class="tabs__button" role="tab" aria-selected="false" aria-controls="tab-panel" id="tab-contact" data-tab="contact">Contact</button>
+        </li>
+      </ul>
+    </nav>
+  </header>
+  <main class="page__main layout">
+    <aside class="layout__aside categories" aria-label="Categories">
+      <h2 class="categories__title">Categories</h2>
+      <ul class="categories__list">
+        <li class="categories__item"><a class="categories__link" href="categories/literature.html">Literature</a></li>
+        <li class="categories__item"><a class="categories__link" href="categories/promotions.html">Promotions</a></li>
+        <li class="categories__item"><a class="categories__link" href="categories/training-tools.html">Training Tools</a></li>
+      </ul>
+    </aside>
+    <section class="layout__content panels">
+      <article class="panels__panel panels__panel--active" id="tab-panel" role="tabpanel" aria-labelledby="tab-publishing" aria-live="polite" tabindex="-1">
+        <h2 class="panels__title" id="tab-panel-title">Publishing House</h2>
+        <div class="panels__body" id="tab-panel-body">
+          <p class="panels__text">Highlight your publishing legacy, flagship imprints, and the creative vision that guides every release.</p>
+        </div>
+      </article>
+    </section>
+  </main>
+  <footer class="page__footer site-footer">
+    <p class="site-footer__text">© <span id="current-year"></span> Publishing Portfolio. All rights reserved.</p>
+    <nav class="site-footer__social" aria-label="Social media">
+      <ul class="site-footer__social-list">
+        <li class="site-footer__social-item">
+          <a class="site-footer__social-link" href="https://www.facebook.com/yourpublishinghouse" target="_blank" rel="noreferrer noopener">Facebook</a>
+        </li>
+        <li class="site-footer__social-item">
+          <a class="site-footer__social-link" href="https://www.instagram.com/yourpublishinghouse" target="_blank" rel="noreferrer noopener">Instagram</a>
+        </li>
+        <li class="site-footer__social-item">
+          <a class="site-footer__social-link" href="https://www.linkedin.com/company/yourpublishinghouse" target="_blank" rel="noreferrer noopener">LinkedIn</a>
+        </li>
+      </ul>
+    </nav>
+  </footer>
+  <script>
+    const TAB_CONTENT = {
+      publishing: {
+        title: 'Publishing House',
+        body: [
+          'Celebrate your publishing heritage with a concise mission statement that speaks to your editorial vision and the authors you champion.',
+          'Share recent milestones such as award-winning releases, international rights deals, or community initiatives that distinguish your house.',
+          {
+            type: 'list',
+            items: [
+              'Core genres: literary fiction, narrative nonfiction, children\'s literature',
+              'Flagship imprints focused on debut voices and translated works',
+              'Collaborations with cultural institutions and festival partners'
+            ]
+          }
+        ]
+      },
+      authors: {
+        title: 'For Authors',
+        body: [
+          'Outline how prospective authors can submit manuscripts, including response timelines and what to expect after hitting send.',
+          'Explain the editorial partnership — from developmental edits to cover design — that helps storytellers feel supported at every step.',
+          {
+            type: 'list',
+            items: [
+              'Downloadable submission checklist',
+              'Monthly virtual pitch sessions hosted by senior editors',
+              'Author mentorship program pairing debut writers with alumni'
+            ]
+          }
+        ]
+      },
+      selfPublishing: {
+        title: 'Self-publishing',
+        body: [
+          'Empower independent creators with transparent packages that combine print-on-demand, distribution, and marketing coaching.',
+          'Clarify which services are à la carte so authors can tailor support to their publishing goals and budget.',
+          {
+            type: 'list',
+            items: [
+              'Production suite: editing, layout, ISBN registration',
+              'Distribution reach: global eBook platforms and boutique bookstores',
+              'Launch toolkit: press release templates and social media calendars'
+            ]
+          }
+        ]
+      },
+      bookstore: {
+        title: 'Bookstore',
+        body: [
+          'Spotlight your curated collections with seasonal displays, staff picks, and themed bundles designed to delight avid readers.',
+          'Promote events hosted in-store or online — from author signings to book club roundtables — that build community around the written word.',
+          {
+            type: 'list',
+            items: [
+              'Signature collections refreshed monthly',
+              'Exclusive signed editions for loyalty members',
+              'Personalized recommendations via concierge service'
+            ]
+          }
+        ]
+      },
+      contact: {
+        title: 'Contact',
+        body: [
+          'Provide tailored contact pathways for media, rights inquiries, partnership proposals, and aspiring authors.',
+          'Set expectations for response times and share links to FAQs or knowledge bases that address common questions upfront.',
+          {
+            type: 'list',
+            items: [
+              'General inbox: hello@yourpublishinghouse.com',
+              'Media & publicity: press@yourpublishinghouse.com',
+              'Author relations: authors@yourpublishinghouse.com'
+            ]
+          }
+        ]
+      }
+    };
+
+    const tabButtons = document.querySelectorAll('.tabs__button');
+    const tabPanel = document.getElementById('tab-panel');
+    const tabPanelTitle = document.getElementById('tab-panel-title');
+    const tabPanelBody = document.getElementById('tab-panel-body');
+
+    const renderTabContent = (tabKey, trigger, { focusPanel = true } = {}) => {
+      const content = TAB_CONTENT[tabKey];
+      if (!content) {
+        return;
+      }
+
+      tabPanelTitle.textContent = content.title;
+      tabPanelBody.innerHTML = '';
+
+      content.body.forEach((entry) => {
+        if (typeof entry === 'string') {
+          const paragraphElement = document.createElement('p');
+          paragraphElement.className = 'panels__text';
+          paragraphElement.textContent = entry;
+          tabPanelBody.appendChild(paragraphElement);
+          return;
+        }
+
+        if (entry.type === 'list' && Array.isArray(entry.items)) {
+          const listElement = document.createElement('ul');
+          listElement.className = 'panels__list';
+          entry.items.forEach((itemText) => {
+            const listItem = document.createElement('li');
+            listItem.className = 'panels__list-item';
+            listItem.textContent = itemText;
+            listElement.appendChild(listItem);
+          });
+          tabPanelBody.appendChild(listElement);
+        }
+      });
+
+      tabPanel.setAttribute('aria-labelledby', trigger.id);
+      if (focusPanel) {
+        tabPanel.focus({ preventScroll: true });
+      }
+    };
+
+    tabButtons.forEach((button) => {
+      button.addEventListener('click', () => {
+        if (button.getAttribute('aria-selected') === 'true') {
+          return;
+        }
+
+        tabButtons.forEach((btn) => {
+          btn.classList.remove('tabs__button--active');
+          btn.setAttribute('aria-selected', 'false');
+        });
+
+        button.classList.add('tabs__button--active');
+        button.setAttribute('aria-selected', 'true');
+
+        renderTabContent(button.dataset.tab, button);
+      });
+    });
+
+    const activeTab = document.querySelector('.tabs__button[aria-selected="true"]') || tabButtons[0];
+    if (activeTab) {
+      renderTabContent(activeTab.dataset.tab, activeTab, { focusPanel: false });
+    }
+
+    document.getElementById('current-year').textContent = new Date().getFullYear();
+  </script>
+</body>
+</html>
