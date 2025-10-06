@@ -36,9 +36,9 @@
     <aside class="layout__aside categories" aria-label="Categories">
       <h2 class="categories__title">Categories</h2>
       <ul class="categories__list">
-        <li class="categories__item"><a class="categories__link" href="#">Literature</a></li>
-        <li class="categories__item"><a class="categories__link" href="#">Promotions</a></li>
-        <li class="categories__item"><a class="categories__link" href="#">Training Tools</a></li>
+        <li class="categories__item"><a class="categories__link" href="categories/literature.html">Literature</a></li>
+        <li class="categories__item"><a class="categories__link" href="categories/promotions.html">Promotions</a></li>
+        <li class="categories__item"><a class="categories__link" href="categories/training-tools.html">Training Tools</a></li>
       </ul>
     </aside>
     <section class="layout__content panels">
@@ -71,31 +71,76 @@
       publishing: {
         title: 'Publishing House',
         body: [
-          'Highlight your publishing legacy, flagship imprints, and the creative vision that guides every release.'
+          'Celebrate your publishing heritage with a concise mission statement that speaks to your editorial vision and the authors you champion.',
+          'Share recent milestones such as award-winning releases, international rights deals, or community initiatives that distinguish your house.',
+          {
+            type: 'list',
+            items: [
+              'Core genres: literary fiction, narrative nonfiction, children\'s literature',
+              'Flagship imprints focused on debut voices and translated works',
+              'Collaborations with cultural institutions and festival partners'
+            ]
+          }
         ]
       },
       authors: {
         title: 'For Authors',
         body: [
-          'Outline submission guidelines, editorial support, and community resources for aspiring writers.'
+          'Outline how prospective authors can submit manuscripts, including response timelines and what to expect after hitting send.',
+          'Explain the editorial partnership — from developmental edits to cover design — that helps storytellers feel supported at every step.',
+          {
+            type: 'list',
+            items: [
+              'Downloadable submission checklist',
+              'Monthly virtual pitch sessions hosted by senior editors',
+              'Author mentorship program pairing debut writers with alumni'
+            ]
+          }
         ]
       },
       selfPublishing: {
         title: 'Self-publishing',
         body: [
-          'Showcase hybrid publishing packages, print-on-demand solutions, and marketing mentorship.'
+          'Empower independent creators with transparent packages that combine print-on-demand, distribution, and marketing coaching.',
+          'Clarify which services are à la carte so authors can tailor support to their publishing goals and budget.',
+          {
+            type: 'list',
+            items: [
+              'Production suite: editing, layout, ISBN registration',
+              'Distribution reach: global eBook platforms and boutique bookstores',
+              'Launch toolkit: press release templates and social media calendars'
+            ]
+          }
         ]
       },
       bookstore: {
         title: 'Bookstore',
         body: [
-          'Feature curated collections, seasonal highlights, and exclusive signed editions.'
+          'Spotlight your curated collections with seasonal displays, staff picks, and themed bundles designed to delight avid readers.',
+          'Promote events hosted in-store or online — from author signings to book club roundtables — that build community around the written word.',
+          {
+            type: 'list',
+            items: [
+              'Signature collections refreshed monthly',
+              'Exclusive signed editions for loyalty members',
+              'Personalized recommendations via concierge service'
+            ]
+          }
         ]
       },
       contact: {
         title: 'Contact',
         body: [
-          'Provide avenues for media inquiries, partnership opportunities, and author collaborations.'
+          'Provide tailored contact pathways for media, rights inquiries, partnership proposals, and aspiring authors.',
+          'Set expectations for response times and share links to FAQs or knowledge bases that address common questions upfront.',
+          {
+            type: 'list',
+            items: [
+              'General inbox: hello@yourpublishinghouse.com',
+              'Media & publicity: press@yourpublishinghouse.com',
+              'Author relations: authors@yourpublishinghouse.com'
+            ]
+          }
         ]
       }
     };
@@ -114,11 +159,26 @@
       tabPanelTitle.textContent = content.title;
       tabPanelBody.innerHTML = '';
 
-      content.body.forEach((paragraph) => {
-        const paragraphElement = document.createElement('p');
-        paragraphElement.className = 'panels__text';
-        paragraphElement.textContent = paragraph;
-        tabPanelBody.appendChild(paragraphElement);
+      content.body.forEach((entry) => {
+        if (typeof entry === 'string') {
+          const paragraphElement = document.createElement('p');
+          paragraphElement.className = 'panels__text';
+          paragraphElement.textContent = entry;
+          tabPanelBody.appendChild(paragraphElement);
+          return;
+        }
+
+        if (entry.type === 'list' && Array.isArray(entry.items)) {
+          const listElement = document.createElement('ul');
+          listElement.className = 'panels__list';
+          entry.items.forEach((itemText) => {
+            const listItem = document.createElement('li');
+            listItem.className = 'panels__list-item';
+            listItem.textContent = itemText;
+            listElement.appendChild(listItem);
+          });
+          tabPanelBody.appendChild(listElement);
+        }
       });
 
       tabPanel.setAttribute('aria-labelledby', trigger.id);
