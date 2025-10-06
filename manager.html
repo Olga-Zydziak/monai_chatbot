@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Content Manager | Publishing Portfolio</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="page">
+  <header class="page__header site-header">
+    <div class="page__container site-header__inner">
+      <div class="site-header__branding">
+        <div class="site-header__logo" aria-label="Logo placeholder"></div>
+        <div class="site-header__hero"></div>
+      </div>
+      <nav class="site-header__tabs" aria-label="Manager navigation">
+        <ul class="tabs" role="list">
+          <li class="tabs__item"><a class="tabs__button" href="index.html">← Back to site</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+  <main class="page__main">
+    <section class="content-manager" aria-labelledby="content-manager-title">
+      <div class="page__container content-manager__inner">
+        <header class="content-manager__header">
+          <div class="content-manager__intro">
+            <h1 class="content-manager__title" id="content-manager-title">Quick Content Manager</h1>
+            <p class="content-manager__description">Update tab titles, narrative copy, and contact details without touching the codebase. Copy the generated configuration and paste it back into <code>scripts/tab-content.js</code> or your CMS.</p>
+          </div>
+          <p class="content-manager__notice" role="note">Separate paragraphs with a blank line. Start a line with “- ” to create bullet points. Contact settings appear when the Contact tab is selected.</p>
+        </header>
+        <form class="content-manager__form" id="content-manager-form">
+          <div class="content-manager__field">
+            <label class="content-manager__label" for="manager-tab">Choose section</label>
+            <select class="content-manager__select" id="manager-tab" name="manager-tab">
+              <option value="publishing">Publishing House</option>
+              <option value="authors">For Authors</option>
+              <option value="selfPublishing">Self-publishing</option>
+              <option value="bookstore">Bookstore</option>
+              <option value="contact">Contact</option>
+            </select>
+          </div>
+          <div class="content-manager__field">
+            <label class="content-manager__label" for="manager-title">Tab title</label>
+            <input class="content-manager__input" id="manager-title" name="manager-title" type="text" required />
+          </div>
+          <div class="content-manager__field content-manager__field--wide">
+            <label class="content-manager__label" for="manager-body">Tab content</label>
+            <textarea class="content-manager__textarea" id="manager-body" name="manager-body" rows="10" required></textarea>
+            <p class="content-manager__hint">Example bullet list:<br />- First highlight<br />- Second highlight</p>
+          </div>
+          <fieldset class="content-manager__fieldset" data-manager-contact hidden>
+            <legend class="content-manager__legend">Contact details</legend>
+            <div class="content-manager__field">
+              <label class="content-manager__label" for="manager-phone">Phone number</label>
+              <input class="content-manager__input" id="manager-phone" name="manager-phone" type="tel" placeholder="+48 123 456 789" />
+            </div>
+            <div class="content-manager__field">
+              <label class="content-manager__label" for="manager-email">Displayed email</label>
+              <input class="content-manager__input" id="manager-email" name="manager-email" type="email" placeholder="kontakt@twojwydawnictwo.pl" />
+            </div>
+            <div class="content-manager__field">
+              <label class="content-manager__label" for="manager-recipient">Recipient email</label>
+              <input class="content-manager__input" id="manager-recipient" name="manager-recipient" type="email" placeholder="krzysiekz123@wp.pl" />
+            </div>
+            <div class="content-manager__field">
+              <label class="content-manager__label" for="manager-endpoint">Form endpoint URL</label>
+              <input class="content-manager__input" id="manager-endpoint" name="manager-endpoint" type="url" placeholder="https://formsubmit.co/ajax/your-email" />
+            </div>
+            <div class="content-manager__field">
+              <label class="content-manager__label" for="manager-submitting">Submitting message</label>
+              <input class="content-manager__input" id="manager-submitting" name="manager-submitting" type="text" placeholder="Sending your message…" />
+            </div>
+            <div class="content-manager__field">
+              <label class="content-manager__label" for="manager-success">Success message</label>
+              <input class="content-manager__input" id="manager-success" name="manager-success" type="text" placeholder="Thank you! We will reply shortly." />
+            </div>
+            <div class="content-manager__field">
+              <label class="content-manager__label" for="manager-error">Error message</label>
+              <input class="content-manager__input" id="manager-error" name="manager-error" type="text" placeholder="Sorry, something went wrong." />
+            </div>
+          </fieldset>
+          <div class="content-manager__actions">
+            <button class="content-manager__button" type="submit">Update preview</button>
+            <button class="content-manager__button content-manager__button--ghost" type="button" id="manager-reset">Reset form</button>
+          </div>
+          <p class="content-manager__status" id="manager-status" role="status" aria-live="polite"></p>
+        </form>
+        <section class="content-manager__output" aria-live="polite" aria-label="Generated configuration">
+          <h2 class="content-manager__output-title">Generated configuration</h2>
+          <pre class="content-manager__output-code" id="manager-output"></pre>
+        </section>
+      </div>
+    </section>
+  </main>
+  <footer class="page__footer site-footer">
+    <div class="page__container site-footer__inner">
+      <p class="site-footer__text">Need help integrating these updates? Email <a class="site-footer__social-link" href="mailto:kontakt@twojwydawnictwo.pl">kontakt@twojwydawnictwo.pl</a></p>
+    </div>
+  </footer>
+  <script src="scripts/tab-content.js"></script>
+  <script src="scripts/manager.js"></script>
+</body>
+</html>
