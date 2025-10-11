@@ -74,6 +74,120 @@
     return listElement;
   };
 
+  const scriptCache = new Map();
+
+  const loadExternalScript = (url) => {
+    if (!url) {
+      return Promise.reject(new Error('Script URL missing.'));
+    }
+
+    if (scriptCache.has(url)) {
+      return scriptCache.get(url);
+    }
+
+    const existing = document.querySelector(`script[src="${url}"]`);
+
+    if (existing) {
+      if (existing.dataset.loaded === 'true' || existing.readyState === 'complete') {
+        const resolved = Promise.resolve();
+        scriptCache.set(url, resolved);
+        return resolved;
+      }
+
+      const promise = new Promise((resolve, reject) => {
+        existing.addEventListener('load', () => {
+          existing.dataset.loaded = 'true';
+          resolve();
+        });
+        existing.addEventListener('error', () => {
+          scriptCache.delete(url);
+          reject(new Error(`Failed to load script: ${url}`));
+        });
+      });
+
+      scriptCache.set(url, promise);
+      return promise;
+    }
+
+    const script = document.createElement('script');
+    script.src = url;
+    script.async = true;
+    script.charset = 'utf-8';
+    script.dataset.cfasync = 'false';
+
+    const promise = new Promise((resolve, reject) => {
+      script.addEventListener('load', () => {
+        script.dataset.loaded = 'true';
+        resolve();
+      });
+
+      script.addEventListener('error', () => {
+        scriptCache.delete(url);
+        reject(new Error(`Failed to load script: ${url}`));
+      });
+    });
+
+    document.head.appendChild(script);
+    scriptCache.set(url, promise);
+    return promise;
+  };
+
+  const initialiseSellastic = (args, attempt = 0) => {
+    if (typeof window.xProductBrowser === 'function') {
+      window.xProductBrowser(...args);
+      return Promise.resolve();
+    }
+
+    if (attempt > 6) {
+      return Promise.reject(new Error('Sellastic initializer unavailable.'));
+    }
+
+    return new Promise((resolve, reject) => {
+      window.setTimeout(() => {
+        initialiseSellastic(args, attempt + 1).then(resolve).catch(reject);
+      }, 200 * (attempt + 1));
+    });
+  };
+
+  const createSellasticStore = (config = {}) => {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'panels__store';
+
+    const containerId = config.containerId || `sellastic-store-${Math.random().toString(36).slice(2, 7)}`;
+    const storeFrame = document.createElement('div');
+    storeFrame.id = containerId;
+    storeFrame.className = 'panels__store-frame';
+    wrapper.appendChild(storeFrame);
+
+    const status = document.createElement('p');
+    status.className = 'panels__store-status';
+    status.setAttribute('role', 'status');
+    status.setAttribute('aria-live', 'polite');
+    status.textContent = config.loadingMessage || 'Loading bookstore…';
+    wrapper.appendChild(status);
+
+    const args = Array.isArray(config.arguments) ? config.arguments.slice() : [];
+    if (!args.some((argument) => typeof argument === 'string' && argument.trim().startsWith('id='))) {
+      args.push(`id=${containerId}`);
+    }
+
+    const showError = (message) => {
+      status.hidden = false;
+      status.textContent = message || config.errorMessage || 'Unable to load the bookstore. Please try again later.';
+    };
+
+    loadExternalScript(config.scriptUrl)
+      .then(() => initialiseSellastic(args))
+      .then(() => {
+        status.hidden = true;
+      })
+      .catch(() => {
+        showError(config.errorMessage);
+      });
+
+    return wrapper;
+  };
+
   const setStatusMessage = (statusElement, state, message) => {
     if (!statusElement) {
       return;
@@ -367,6 +481,10 @@
         tabPanelBody.appendChild(createList(entry.items));
       }
     });
+
+    if (content.store?.type === 'sellastic') {
+      tabPanelBody.appendChild(createSellasticStore(content.store));
+    }
 
     if (content.contactDetails) {
       const contactDetails = normaliseContactDetails(content.contactDetails);

@@ -254,6 +254,27 @@ input:focus-visible {
   color: var(--color-text-secondary);
 }
 
+.panels__store {
+  display: grid;
+  gap: var(--space-sm);
+  padding: var(--card-padding);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  background-color: var(--color-surface-alt);
+  box-shadow: var(--shadow-elevated);
+}
+
+.panels__store-frame {
+  width: 100%;
+  min-height: 20rem;
+}
+
+.panels__store-status {
+  margin: 0;
+  font-size: var(--font-size-300);
+  color: var(--color-text-secondary);
+}
+
 .panels__list {
   margin: 0;
   padding-left: var(--space-xl);

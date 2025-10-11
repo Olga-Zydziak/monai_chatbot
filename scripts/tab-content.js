@@ -47,17 +47,25 @@ window.PUBLISHING_TAB_CONTENT = {
   bookstore: {
     title: 'Bookstore',
     body: [
-      'Spotlight your curated collections with seasonal displays, staff picks, and themed bundles designed to delight avid readers.',
-      'Promote events hosted in-store or online — from author signings to book club roundtables — that build community around the written word.',
-      {
-        type: 'list',
-        items: [
-          'Signature collections refreshed monthly',
-          'Exclusive signed editions for loyalty members',
-          'Personalized recommendations via concierge service'
-        ]
-      }
-    ]
+      'Browse new releases, seasonal spotlights, and limited editions curated by our in-house team of editors and booksellers.',
+      'Filter by genre or theme, discover staff recommendations, and add titles directly to your cart without leaving the experience.'
+    ],
+    store: {
+      type: 'sellastic',
+      containerId: 'my-store-125179016',
+      scriptUrl:
+        'https://app.sellastik.store/script.js?125179016&data_platform=code&data_date=2025-10-11',
+      arguments: [
+        'categoriesPerRow=3',
+        'views=grid(20,3) list(60) table(60)',
+        'categoryView=grid',
+        'searchView=list',
+        'id=my-store-125179016'
+      ],
+      loadingMessage: 'Ładujemy naszą księgarnię…',
+      errorMessage:
+        'Nie udało się załadować księgarni. Odśwież stronę lub spróbuj ponownie później.'
+    }
   },
   contact: {
     title: 'Contact',

@@ -11,6 +11,47 @@
     }
   };
 
+  const mergeContent = (base = {}, overrides = {}) => {
+    const merged = { ...base };
+    Object.entries(overrides).forEach(([key, value]) => {
+      if (value == null) {
+        return;
+      }
+
+      const baseValue = base[key];
+
+      if (Array.isArray(value)) {
+        merged[key] = value.slice();
+        return;
+      }
+
+      if (typeof value === 'object' && !Array.isArray(value)) {
+        const nextValue = {
+          ...(typeof baseValue === 'object' && !Array.isArray(baseValue) ? baseValue : {}),
+          ...value
+        };
+
+        if (Array.isArray(value.body)) {
+          nextValue.body = value.body.slice();
+        }
+
+        if (value.contactDetails || baseValue?.contactDetails) {
+          nextValue.contactDetails = {
+            ...(baseValue?.contactDetails || {}),
+            ...(value.contactDetails || {})
+          };
+        }
+
+        merged[key] = nextValue;
+        return;
+      }
+
+      merged[key] = value;
+    });
+
+    return merged;
+  };
+
   const saveOverrides = (content) => {
     try {
       window.localStorage?.setItem('publishingTabContent', JSON.stringify(content));
@@ -32,10 +73,7 @@
   };
 
   const storedOverrides = loadOverrides();
-  const originalContent = { ...DEFAULT_CONTENT };
-  Object.entries(storedOverrides).forEach(([key, value]) => {
-    originalContent[key] = value;
-  });
+  const originalContent = mergeContent(DEFAULT_CONTENT, storedOverrides);
 
   const workingCopy = JSON.parse(JSON.stringify(originalContent));
 
@@ -163,7 +201,9 @@
       return false;
     }
 
+    const existingContent = workingCopy[tabKey] || {};
     const nextContent = {
+      ...existingContent,
       title: titleValue,
       body: parseInputToBody(bodyValue)
     };
