@@ -1,14 +1,149 @@
 (() => {
+  const CONTENT_STORAGE_KEY = 'publishingTabContent';
+  const THEME_STORAGE_KEY = 'publishingThemeOverrides';
+  const THEME_TOKENS = [
+    '--color-background',
+    '--color-surface',
+    '--color-surface-alt',
+    '--color-accent',
+    '--color-accent-muted',
+    '--color-text-primary',
+    '--color-text-secondary'
+  ];
+
   const DEFAULT_CONTENT = window.PUBLISHING_TAB_CONTENT || {};
 
-  const loadOverrides = () => {
+  const loadContentOverrides = () => {
     try {
-      const storedValue = window.localStorage?.getItem('publishingTabContent');
+      const storedValue = window.localStorage?.getItem(CONTENT_STORAGE_KEY);
       return storedValue ? JSON.parse(storedValue) : {};
     } catch (error) {
       console.warn('Unable to load stored overrides.', error);
       return {};
     }
+  };
+
+  const saveContentOverrides = (content) => {
+    try {
+      window.localStorage?.setItem(CONTENT_STORAGE_KEY, JSON.stringify(content));
+      return true;
+    } catch (error) {
+      console.warn('Unable to persist overrides.', error);
+      return false;
+    }
+  };
+
+  const clearContentOverrides = () => {
+    try {
+      window.localStorage?.removeItem(CONTENT_STORAGE_KEY);
+      return true;
+    } catch (error) {
+      console.warn('Unable to clear stored overrides.', error);
+      return false;
+    }
+  };
+
+  const loadThemeOverrides = () => {
+    try {
+      const storedValue = window.localStorage?.getItem(THEME_STORAGE_KEY);
+      return storedValue ? JSON.parse(storedValue) : {};
+    } catch (error) {
+      console.warn('Unable to load stored theme overrides.', error);
+      return {};
+    }
+  };
+
+  const saveThemeOverrides = (theme) => {
+    try {
+      const payload = { ...theme };
+      if (Object.keys(payload).length) {
+        window.localStorage?.setItem(THEME_STORAGE_KEY, JSON.stringify(payload));
+      } else {
+        window.localStorage?.removeItem(THEME_STORAGE_KEY);
+      }
+      return true;
+    } catch (error) {
+      console.warn('Unable to persist theme overrides.', error);
+      return false;
+    }
+  };
+
+  const clearThemeOverrides = () => {
+    try {
+      window.localStorage?.removeItem(THEME_STORAGE_KEY);
+      return true;
+    } catch (error) {
+      console.warn('Unable to clear stored theme overrides.', error);
+      return false;
+    }
+  };
+
+  const toFullHex = (value) => {
+    if (typeof value !== 'string') {
+      return '';
+    }
+
+    const trimmed = value.trim();
+    if (!trimmed) {
+      return '';
+    }
+
+    if (/^#([\da-f]{3})$/i.test(trimmed)) {
+      return `#${trimmed
+        .slice(1)
+        .split('')
+        .map((char) => char + char)
+        .join('')}`.toLowerCase();
+    }
+
+    if (/^#([\da-f]{6})$/i.test(trimmed)) {
+      return trimmed.toLowerCase();
+    }
+
+    const rgbMatch = trimmed.match(/^rgba?\((\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})/i);
+    if (rgbMatch) {
+      const [, r, g, b] = rgbMatch;
+      const componentToHex = (component) => {
+        const parsed = Math.max(0, Math.min(255, Number(component) || 0));
+        return parsed.toString(16).padStart(2, '0');
+      };
+      return `#${componentToHex(r)}${componentToHex(g)}${componentToHex(b)}`;
+    }
+
+    return '';
+  };
+
+  const computeAccentMuted = (hex, alpha = 0.12) => {
+    const normalized = toFullHex(hex);
+    if (!normalized) {
+      return '';
+    }
+
+    const bigint = parseInt(normalized.slice(1), 16);
+    const r = (bigint >> 16) & 255;
+    const g = (bigint >> 8) & 255;
+    const b = bigint & 255;
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  };
+
+  const applyThemeOverrides = (overrides = {}) => {
+    const root = document.documentElement;
+    const merged = { ...overrides };
+    if (merged['--color-accent'] && !merged['--color-accent-muted']) {
+      const accentMuted = computeAccentMuted(merged['--color-accent']);
+      if (accentMuted) {
+        merged['--color-accent-muted'] = accentMuted;
+      }
+    }
+
+    THEME_TOKENS.forEach((token) => {
+      const value = merged[token];
+      if (value) {
+        root.style.setProperty(token, value);
+      } else {
+        root.style.removeProperty(token);
+      }
+    });
   };
 
   const mergeContent = (base = {}, overrides = {}) => {
@@ -52,27 +187,7 @@
     return merged;
   };
 
-  const saveOverrides = (content) => {
-    try {
-      window.localStorage?.setItem('publishingTabContent', JSON.stringify(content));
-      return true;
-    } catch (error) {
-      console.warn('Unable to persist overrides.', error);
-      return false;
-    }
-  };
-
-  const clearOverrides = () => {
-    try {
-      window.localStorage?.removeItem('publishingTabContent');
-      return true;
-    } catch (error) {
-      console.warn('Unable to clear stored overrides.', error);
-      return false;
-    }
-  };
-
-  const storedOverrides = loadOverrides();
+  const storedOverrides = loadContentOverrides();
   const originalContent = mergeContent(DEFAULT_CONTENT, storedOverrides);
 
   const workingCopy = JSON.parse(JSON.stringify(originalContent));
@@ -85,12 +200,24 @@
   const contactFieldset = document.querySelector('[data-manager-contact]');
   const phoneInput = document.getElementById('manager-phone');
   const emailInput = document.getElementById('manager-email');
+  const subjectInput = document.getElementById('manager-subject');
   const submittingInput = document.getElementById('manager-submitting');
   const successInput = document.getElementById('manager-success');
   const errorInput = document.getElementById('manager-error');
   const outputTarget = document.getElementById('manager-output');
   const formElement = document.getElementById('content-manager-form');
   const clearButton = document.getElementById('manager-clear');
+  const themeResetButton = document.getElementById('manager-theme-reset');
+  const themeTextInputs = Array.from(document.querySelectorAll('[data-theme-token]'));
+  const themePickers = new Map();
+  document.querySelectorAll('[data-theme-picker]').forEach((input) => {
+    if (input instanceof HTMLInputElement && input.dataset.themePicker) {
+      themePickers.set(input.dataset.themePicker, input);
+    }
+  });
+
+  let themeOverrides = loadThemeOverrides();
+  applyThemeOverrides(themeOverrides);
 
   const buildFormEndpoint = (email) =>
     email ? `https://formsubmit.co/ajax/${encodeURIComponent(email)}` : '';
@@ -101,6 +228,7 @@
     const submittingMessage = details.submittingMessage || 'Sending your message…';
     const successMessage = details.successMessage || 'Thank you! We will reply shortly.';
     const errorMessage = details.errorMessage || 'Sorry, something went wrong. Please try again later.';
+    const subject = details.subject || 'New inquiry from the Publishing Portfolio contact form';
 
     return {
       phoneLabel: details.phoneLabel || 'Phone',
@@ -111,7 +239,8 @@
       formEndpoint: buildFormEndpoint(emailValue),
       submittingMessage,
       successMessage,
-      errorMessage
+      errorMessage,
+      subject
     };
   };
 
@@ -156,9 +285,129 @@
     });
   };
 
-  const renderOutput = () => {
-    outputTarget.textContent = `window.PUBLISHING_TAB_CONTENT = ${JSON.stringify(workingCopy, null, 2)};`;
+  function renderOutput() {
+    const contentExport = `window.PUBLISHING_TAB_CONTENT = ${JSON.stringify(workingCopy, null, 2)};`;
+    const hasThemeOverrides = Object.keys(themeOverrides || {}).length > 0;
+    const themeExport = hasThemeOverrides
+      ? `window.PUBLISHING_THEME_OVERRIDES = ${JSON.stringify(themeOverrides, null, 2)};`
+      : '// No theme overrides saved.';
+    outputTarget.textContent = `${contentExport}\n\n${themeExport}`;
+  }
+
+  const editableThemeTokens = Array.from(
+    new Set(
+      themeTextInputs
+        .map((input) => input.dataset.themeToken)
+        .filter(Boolean)
+    )
+  );
+
+  const getComputedTokenValue = (token) =>
+    getComputedStyle(document.documentElement).getPropertyValue(token || '').trim();
+
+  const getThemeValue = (token) => {
+    if (!token) {
+      return '';
+    }
+
+    const override = themeOverrides[token];
+    if (override !== undefined && override !== null && `${override}`.trim() !== '') {
+      return `${override}`;
+    }
+
+    return getComputedTokenValue(token);
   };
+
+  const syncThemeField = (token) => {
+    if (!token) {
+      return;
+    }
+
+    const value = getThemeValue(token);
+    const textInput = document.querySelector(`[data-theme-token="${token}"]`);
+    if (textInput instanceof HTMLInputElement) {
+      textInput.value = value;
+    }
+
+    const picker = themePickers.get(token);
+    if (picker) {
+      const hexValue = toFullHex(value);
+      if (hexValue) {
+        picker.value = hexValue;
+      }
+    }
+  };
+
+  const syncThemeFields = () => {
+    editableThemeTokens.forEach((token) => {
+      syncThemeField(token);
+    });
+  };
+
+  const updateThemeToken = (token, value) => {
+    if (!token) {
+      return;
+    }
+
+    const trimmedValue = typeof value === 'string' ? value.trim() : value;
+    if (!trimmedValue) {
+      delete themeOverrides[token];
+      if (token === '--color-accent') {
+        delete themeOverrides['--color-accent-muted'];
+      }
+    } else {
+      themeOverrides[token] = trimmedValue;
+      if (token === '--color-accent') {
+        const accentMuted = computeAccentMuted(trimmedValue);
+        if (accentMuted) {
+          themeOverrides['--color-accent-muted'] = accentMuted;
+        }
+      }
+    }
+
+    applyThemeOverrides(themeOverrides);
+    const saved = saveThemeOverrides(themeOverrides);
+    syncThemeField(token);
+    if (token === '--color-accent') {
+      syncThemeField('--color-accent-muted');
+    }
+    renderOutput();
+    if (statusOutput) {
+      statusOutput.textContent = saved
+        ? 'Theme colors updated. Refresh the home page to preview changes.'
+        : 'Theme updated for this session, but the browser blocked saving the change.';
+    }
+  };
+
+  themeTextInputs.forEach((input) => {
+    input.addEventListener('input', () => {
+      updateThemeToken(input.dataset.themeToken, input.value);
+    });
+  });
+
+  themePickers.forEach((picker, token) => {
+    picker.addEventListener('input', () => {
+      const hexValue = toFullHex(picker.value);
+      const textInput = document.querySelector(`[data-theme-token="${token}"]`);
+      if (textInput instanceof HTMLInputElement && hexValue) {
+        textInput.value = hexValue;
+      }
+      updateThemeToken(token, hexValue || picker.value);
+    });
+  });
+
+  themeResetButton?.addEventListener('click', () => {
+    themeOverrides = {};
+    const cleared = clearThemeOverrides();
+    applyThemeOverrides(themeOverrides);
+    syncThemeFields();
+    renderOutput();
+    if (statusOutput) {
+      statusOutput.textContent = cleared
+        ? 'Theme colors reset to the default palette.'
+        : 'Theme reset locally, but stored overrides could not be cleared.';
+    }
+  });
 
   const syncForm = (tabKey) => {
     const content = workingCopy[tabKey];
@@ -183,6 +432,9 @@
         workingCopy[tabKey].contactDetails = JSON.parse(JSON.stringify(details));
         phoneInput.value = details.phoneNumber || '';
         emailInput.value = details.emailAddress || '';
+        if (subjectInput) {
+          subjectInput.value = details.subject || '';
+        }
         submittingInput.value = details.submittingMessage || '';
         successInput.value = details.successMessage || '';
         errorInput.value = details.errorMessage || '';
@@ -211,6 +463,7 @@
     if (tabKey === 'contact') {
       const phoneValue = phoneInput.value.trim();
       const emailValue = emailInput.value.trim();
+      const subjectValue = subjectInput?.value.trim() || '';
 
       if (!phoneValue || !emailValue) {
         statusOutput.textContent = 'Please provide both the phone number and contact email for the Contact section.';
@@ -226,13 +479,16 @@
         emailAddress: emailValue,
         submittingMessage,
         successMessage,
-        errorMessage
+        errorMessage,
+        subject: subjectValue || undefined
       });
     }
 
     workingCopy[tabKey] = nextContent;
     return true;
   };
+
+  syncThemeFields();
 
   tabSelect?.addEventListener('change', () => {
     syncForm(tabSelect.value);
@@ -243,7 +499,7 @@
     const tabKey = tabSelect.value;
 
     if (updateWorkingCopy(tabKey)) {
-      if (saveOverrides(workingCopy)) {
+      if (saveContentOverrides(workingCopy)) {
         originalContent[tabKey] = JSON.parse(JSON.stringify(workingCopy[tabKey] || {}));
         statusOutput.textContent = 'Preview updated. Refresh the home page to see your changes. They are stored only in this browser.';
       } else {
@@ -262,7 +518,10 @@
   });
 
   clearButton?.addEventListener('click', () => {
-    if (clearOverrides()) {
+    const contentCleared = clearContentOverrides();
+    const themeCleared = clearThemeOverrides();
+
+    if (contentCleared) {
       Object.keys(workingCopy).forEach((key) => {
         if (Object.prototype.hasOwnProperty.call(DEFAULT_CONTENT, key)) {
           workingCopy[key] = JSON.parse(JSON.stringify(DEFAULT_CONTENT[key] || {}));
@@ -287,11 +546,28 @@
           originalContent[key] = JSON.parse(JSON.stringify(DEFAULT_CONTENT[key] || {}));
         }
       });
+    }
+
+    if (themeCleared) {
+      themeOverrides = {};
+      applyThemeOverrides(themeOverrides);
+      syncThemeFields();
+    }
+
+    if (contentCleared || themeCleared) {
       syncForm(tabSelect.value);
-      statusOutput.textContent = 'Stored changes removed. The manager now reflects the default configuration.';
+      const messageParts = [];
+      if (contentCleared) {
+        messageParts.push('Content overrides removed');
+      }
+      if (themeCleared) {
+        messageParts.push('Theme overrides cleared');
+      }
+      statusOutput.textContent = `${messageParts.join(' and ')}. The manager now reflects the default configuration.`;
     } else {
       statusOutput.textContent = 'Unable to clear stored changes. Please check your browser permissions.';
     }
+
     renderOutput();
   });
 

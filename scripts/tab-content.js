@@ -80,6 +80,7 @@ window.PUBLISHING_TAB_CONTENT = {
       emailAddress: 'kontakt@twojwydawnictwo.pl',
       formRecipient: 'kontakt@twojwydawnictwo.pl',
       formEndpoint: 'https://formsubmit.co/ajax/kontakt%40twojwydawnictwo.pl',
+      subject: 'New inquiry from the Publishing Portfolio contact form',
       submittingMessage: 'Sending your message…',
       successMessage: 'Dziękujemy! Odpowiemy w ciągu dwóch dni roboczych.',
       errorMessage: 'Przepraszamy, nie udało się wysłać wiadomości. Spróbuj ponownie później.'

@@ -1,5 +1,93 @@
 (() => {
   const DEFAULT_TAB_CONTENT = window.PUBLISHING_TAB_CONTENT || {};
+  const THEME_STORAGE_KEY = 'publishingThemeOverrides';
+  const THEME_TOKENS = [
+    '--color-background',
+    '--color-surface',
+    '--color-surface-alt',
+    '--color-accent',
+    '--color-accent-muted',
+    '--color-text-primary',
+    '--color-text-secondary'
+  ];
+
+  const toFullHex = (value) => {
+    if (typeof value !== 'string') {
+      return '';
+    }
+
+    const trimmed = value.trim();
+    if (!trimmed) {
+      return '';
+    }
+
+    if (/^#([\da-f]{3})$/i.test(trimmed)) {
+      return `#${trimmed
+        .slice(1)
+        .split('')
+        .map((char) => char + char)
+        .join('')}`.toLowerCase();
+    }
+
+    if (/^#([\da-f]{6})$/i.test(trimmed)) {
+      return trimmed.toLowerCase();
+    }
+
+    const rgbMatch = trimmed.match(/^rgba?\((\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})/i);
+    if (rgbMatch) {
+      const [, r, g, b] = rgbMatch;
+      const componentToHex = (component) => {
+        const parsed = Math.max(0, Math.min(255, Number(component) || 0));
+        return parsed.toString(16).padStart(2, '0');
+      };
+      return `#${componentToHex(r)}${componentToHex(g)}${componentToHex(b)}`;
+    }
+
+    return '';
+  };
+
+  const computeAccentMuted = (hex, alpha = 0.12) => {
+    const normalized = toFullHex(hex);
+    if (!normalized) {
+      return '';
+    }
+
+    const bigint = parseInt(normalized.slice(1), 16);
+    const r = (bigint >> 16) & 255;
+    const g = (bigint >> 8) & 255;
+    const b = bigint & 255;
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  };
+
+  const loadThemeOverrides = () => {
+    try {
+      const storedValue = window.localStorage?.getItem(THEME_STORAGE_KEY);
+      return storedValue ? JSON.parse(storedValue) : {};
+    } catch (error) {
+      console.warn('Unable to load stored theme overrides.', error);
+      return {};
+    }
+  };
+
+  const applyThemeOverrides = (overrides = {}) => {
+    const root = document.documentElement;
+    const merged = { ...overrides };
+    if (merged['--color-accent'] && !merged['--color-accent-muted']) {
+      const accentMuted = computeAccentMuted(merged['--color-accent']);
+      if (accentMuted) {
+        merged['--color-accent-muted'] = accentMuted;
+      }
+    }
+
+    THEME_TOKENS.forEach((token) => {
+      const value = merged[token];
+      if (value) {
+        root.style.setProperty(token, value);
+      } else {
+        root.style.removeProperty(token);
+      }
+    });
+  };
 
   const loadOverrides = () => {
     try {
@@ -47,6 +135,8 @@
     });
     return merged;
   };
+
+  applyThemeOverrides(loadThemeOverrides());
 
   const TAB_CONTENT = mergeContent(DEFAULT_TAB_CONTENT, loadOverrides());
 
@@ -229,6 +319,7 @@
     const submittingMessage = details.submittingMessage || 'Sending your message…';
     const successMessage = details.successMessage || 'Thank you! We will be in touch shortly.';
     const errorMessage = details.errorMessage || 'Sorry, something went wrong. Please try again later.';
+    const subject = details.subject || 'New inquiry from the Publishing Portfolio contact form';
 
     if (!emailAddress && !phoneNumber) {
       return null;
@@ -243,7 +334,8 @@
       formEndpoint: buildEndpoint({ ...details, emailAddress }),
       submittingMessage,
       successMessage,
-      errorMessage
+      errorMessage,
+      subject
     };
   };
 
@@ -296,6 +388,8 @@
     const contactForm = document.createElement('form');
     contactForm.className = 'panels__form';
     contactForm.noValidate = true;
+    contactForm.method = 'post';
+    contactForm.action = details.formEndpoint || '';
 
     const formIdSuffix = Math.random().toString(36).slice(2, 7);
     const nameFieldId = `contact-name-${formIdSuffix}`;
@@ -408,44 +502,53 @@
       setStatusMessage(statusMessage, null, details.submittingMessage || 'Sending your message…');
       submitButton.disabled = true;
 
-      const sendRequest = async () => {
-        if (!endpoint) {
-          await new Promise((resolve) => setTimeout(resolve, 400));
-          return { ok: true };
+    const sendRequest = async () => {
+      if (!endpoint) {
+        throw new Error('No delivery endpoint configured.');
+      }
+
+      try {
+        const requestPayload = {
+          name: payload.name,
+          email: payload.email,
+          message: payload.message,
+          _replyto: payload.email,
+          _template: 'table',
+          _captcha: 'false'
+        };
+
+        if (payload.recipient) {
+          requestPayload._to = payload.recipient;
         }
 
-        try {
-          const formData = new FormData();
-          formData.append('name', payload.name);
-          formData.append('email', payload.email);
-          formData.append('message', payload.message);
-          formData.append('_replyto', payload.email);
-          if (payload.recipient) {
-            formData.append('_to', payload.recipient);
-          }
-
-          const response = await fetch(endpoint, {
-            method: 'POST',
-            headers: {
-              Accept: 'application/json'
-            },
-            body: formData
-          });
-
-          if (!response.ok) {
-            throw new Error('Request failed');
-          }
-
-          const result = await response.json().catch(() => null);
-          if (result && result.success === 'false') {
-            throw new Error('Request failed');
-          }
-
-          return response;
-        } catch (error) {
-          throw new Error('Network request failed');
+        if (details.subject) {
+          requestPayload._subject = details.subject;
         }
-      };
+
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Accept: 'application/json'
+          },
+          body: JSON.stringify(requestPayload)
+        });
+
+        if (!response.ok) {
+          throw new Error('Request failed');
+        }
+
+        const result = await response.json().catch(() => null);
+        if (result && String(result.success).toLowerCase() === 'false') {
+          throw new Error('Request failed');
+        }
+
+        return response;
+      } catch (error) {
+        console.error('Contact form submission failed.', error);
+        throw new Error('Network request failed');
+      }
+    };
 
       try {
         await sendRequest();

@@ -520,6 +520,40 @@ input:focus-visible {
   gap: var(--space-sm);
 }
 
+.content-manager__field--color {
+  gap: var(--space-sm);
+}
+
+.content-manager__color-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+}
+
+.content-manager__color-swatch {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 3rem;
+  height: 3rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  background-color: transparent;
+  padding: 0;
+  cursor: pointer;
+}
+
+.content-manager__color-swatch::-webkit-color-swatch,
+.content-manager__color-swatch::-moz-color-swatch {
+  border: none;
+  border-radius: var(--radius-sm);
+}
+
+.content-manager__input--color {
+  flex: 1 1 12rem;
+  min-width: 10rem;
+}
+
 .content-manager__fieldset {
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
@@ -585,6 +619,10 @@ input:focus-visible {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-sm);
+}
+
+.content-manager__actions--theme {
+  justify-content: flex-start;
 }
 
 .content-manager__button {
