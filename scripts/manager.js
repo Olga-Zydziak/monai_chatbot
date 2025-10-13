@@ -8,8 +8,13 @@
     '--color-accent',
     '--color-accent-muted',
     '--color-text-primary',
-    '--color-text-secondary'
+    '--color-text-secondary',
+    '--shadow-elevated'
   ];
+
+  const DEFAULT_ACCENT_SHADE = 12; // percentage
+  const DEFAULT_SHADOW_ALPHA = 45; // percentage
+  const DEFAULT_THEME_OVERRIDES = window.PUBLISHING_THEME_OVERRIDES || {};
 
   const DEFAULT_CONTENT = window.PUBLISHING_TAB_CONTENT || {};
 
@@ -46,10 +51,11 @@
   const loadThemeOverrides = () => {
     try {
       const storedValue = window.localStorage?.getItem(THEME_STORAGE_KEY);
-      return storedValue ? JSON.parse(storedValue) : {};
+      const storedOverrides = storedValue ? JSON.parse(storedValue) : {};
+      return { ...DEFAULT_THEME_OVERRIDES, ...storedOverrides };
     } catch (error) {
       console.warn('Unable to load stored theme overrides.', error);
-      return {};
+      return { ...DEFAULT_THEME_OVERRIDES };
     }
   };
 
@@ -113,6 +119,8 @@
     return '';
   };
 
+  const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
+
   const computeAccentMuted = (hex, alpha = 0.12) => {
     const normalized = toFullHex(hex);
     if (!normalized) {
@@ -124,6 +132,40 @@
     const g = (bigint >> 8) & 255;
     const b = bigint & 255;
     return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  };
+
+  const extractAlpha = (value) => {
+    if (typeof value !== 'string') {
+      return null;
+    }
+
+    const match = value.trim().match(/rgba?\([^,]+,[^,]+,[^,]+,\s*([\d.]+)\)/i);
+    if (match) {
+      const parsed = Number(match[1]);
+      if (!Number.isNaN(parsed)) {
+        return clamp(parsed, 0, 1);
+      }
+    }
+
+    return null;
+  };
+
+  const buildShadowValue = (alpha) => `0 20px 45px rgba(6, 9, 19, ${alpha.toFixed(2)})`;
+
+  const extractShadowAlpha = (value) => {
+    if (typeof value !== 'string') {
+      return null;
+    }
+
+    const match = value.trim().match(/rgba\([^,]+,[^,]+,[^,]+,\s*([\d.]+)\)/i);
+    if (match) {
+      const parsed = Number(match[1]);
+      if (!Number.isNaN(parsed)) {
+        return clamp(parsed, 0, 1);
+      }
+    }
+
+    return null;
   };
 
   const applyThemeOverrides = (overrides = {}) => {
@@ -210,6 +252,10 @@
   const themeResetButton = document.getElementById('manager-theme-reset');
   const themeTextInputs = Array.from(document.querySelectorAll('[data-theme-token]'));
   const themePickers = new Map();
+  const accentShadeInput = document.getElementById('manager-accent-shade');
+  const accentShadeValue = document.getElementById('manager-accent-shade-value');
+  const shadowDepthInput = document.getElementById('manager-shadow-depth');
+  const shadowDepthValue = document.getElementById('manager-shadow-depth-value');
   document.querySelectorAll('[data-theme-picker]').forEach((input) => {
     if (input instanceof HTMLInputElement && input.dataset.themePicker) {
       themePickers.set(input.dataset.themePicker, input);
@@ -338,15 +384,49 @@
     }
   };
 
+  const updateAccentShadeValue = (percent) => {
+    if (accentShadeValue) {
+      accentShadeValue.textContent = `${percent}%`;
+    }
+  };
+
+  const syncAccentShadeControl = () => {
+    if (!accentShadeInput) {
+      return;
+    }
+
+    const stored = themeOverrides['--color-accent-muted'] || getComputedTokenValue('--color-accent-muted');
+    const alpha = extractAlpha(stored) ?? DEFAULT_ACCENT_SHADE / 100;
+    const percent = Math.round(clamp(alpha, 0, 1) * 100);
+    accentShadeInput.value = String(percent);
+    updateAccentShadeValue(percent);
+  };
+
+  const syncShadowControl = () => {
+    if (!shadowDepthInput) {
+      return;
+    }
+
+    const stored = themeOverrides['--shadow-elevated'] || getComputedTokenValue('--shadow-elevated');
+    const alpha = extractShadowAlpha(stored) ?? DEFAULT_SHADOW_ALPHA / 100;
+    const percent = Math.round(clamp(alpha, 0, 1) * 100);
+    shadowDepthInput.value = String(percent);
+    if (shadowDepthValue) {
+      shadowDepthValue.textContent = `${percent}%`;
+    }
+  };
+
   const syncThemeFields = () => {
     editableThemeTokens.forEach((token) => {
       syncThemeField(token);
     });
+    syncAccentShadeControl();
+    syncShadowControl();
   };
 
-  const updateThemeToken = (token, value) => {
+  const updateThemeToken = (token, value, options = {}) => {
     if (!token) {
-      return;
+      return false;
     }
 
     const trimmedValue = typeof value === 'string' ? value.trim() : value;
@@ -358,7 +438,9 @@
     } else {
       themeOverrides[token] = trimmedValue;
       if (token === '--color-accent') {
-        const accentMuted = computeAccentMuted(trimmedValue);
+        const shadePercent = accentShadeInput ? Number(accentShadeInput.value) : DEFAULT_ACCENT_SHADE;
+        const alpha = clamp((Number.isNaN(shadePercent) ? DEFAULT_ACCENT_SHADE : shadePercent) / 100, 0, 1);
+        const accentMuted = computeAccentMuted(trimmedValue, alpha || DEFAULT_ACCENT_SHADE / 100);
         if (accentMuted) {
           themeOverrides['--color-accent-muted'] = accentMuted;
         }
@@ -370,13 +452,24 @@
     syncThemeField(token);
     if (token === '--color-accent') {
       syncThemeField('--color-accent-muted');
+      syncAccentShadeControl();
+    }
+    if (token === '--color-accent-muted') {
+      syncAccentShadeControl();
+    }
+    if (token === '--shadow-elevated') {
+      syncShadowControl();
     }
     renderOutput();
-    if (statusOutput) {
-      statusOutput.textContent = saved
-        ? 'Theme colors updated. Refresh the home page to preview changes.'
-        : 'Theme updated for this session, but the browser blocked saving the change.';
+    if (statusOutput && !options.silent) {
+      const successMessage = options.message || 'Theme colors updated. Refresh the home page to preview changes.';
+      const failureMessage =
+        options.failureMessage ||
+        'Theme updated for this session, but the browser blocked saving the change.';
+      statusOutput.textContent = saved ? successMessage : failureMessage;
     }
+
+    return saved;
   };
 
   themeTextInputs.forEach((input) => {
@@ -396,8 +489,35 @@
     });
   });
 
+  accentShadeInput?.addEventListener('input', () => {
+    const rawValue = Number(accentShadeInput.value);
+    const percent = clamp(Number.isNaN(rawValue) ? DEFAULT_ACCENT_SHADE : rawValue, 5, 60);
+    accentShadeInput.value = String(percent);
+    updateAccentShadeValue(percent);
+    const accentColor = getThemeValue('--color-accent');
+    const accentMuted = computeAccentMuted(accentColor, clamp(percent / 100, 0, 1));
+    if (accentMuted) {
+      updateThemeToken('--color-accent-muted', accentMuted, {
+        message: 'Accent shading updated. Refresh the home page to preview changes.'
+      });
+    }
+  });
+
+  shadowDepthInput?.addEventListener('input', () => {
+    const rawValue = Number(shadowDepthInput.value);
+    const percent = clamp(Number.isNaN(rawValue) ? DEFAULT_SHADOW_ALPHA : rawValue, 0, 70);
+    shadowDepthInput.value = String(percent);
+    if (shadowDepthValue) {
+      shadowDepthValue.textContent = `${percent}%`;
+    }
+    const alpha = clamp(percent / 100, 0, 1);
+    updateThemeToken('--shadow-elevated', buildShadowValue(alpha), {
+      message: 'Shadow depth updated. Refresh the home page to preview changes.'
+    });
+  });
+
   themeResetButton?.addEventListener('click', () => {
-    themeOverrides = {};
+    themeOverrides = { ...DEFAULT_THEME_OVERRIDES };
     const cleared = clearThemeOverrides();
     applyThemeOverrides(themeOverrides);
     syncThemeFields();
@@ -549,7 +669,7 @@
     }
 
     if (themeCleared) {
-      themeOverrides = {};
+      themeOverrides = { ...DEFAULT_THEME_OVERRIDES };
       applyThemeOverrides(themeOverrides);
       syncThemeFields();
     }

@@ -1,5 +1,6 @@
 (() => {
   const DEFAULT_TAB_CONTENT = window.PUBLISHING_TAB_CONTENT || {};
+  const DEFAULT_THEME_OVERRIDES = window.PUBLISHING_THEME_OVERRIDES || {};
   const THEME_STORAGE_KEY = 'publishingThemeOverrides';
   const THEME_TOKENS = [
     '--color-background',
@@ -8,7 +9,8 @@
     '--color-accent',
     '--color-accent-muted',
     '--color-text-primary',
-    '--color-text-secondary'
+    '--color-text-secondary',
+    '--shadow-elevated'
   ];
 
   const toFullHex = (value) => {
@@ -62,10 +64,11 @@
   const loadThemeOverrides = () => {
     try {
       const storedValue = window.localStorage?.getItem(THEME_STORAGE_KEY);
-      return storedValue ? JSON.parse(storedValue) : {};
+      const storedOverrides = storedValue ? JSON.parse(storedValue) : {};
+      return { ...DEFAULT_THEME_OVERRIDES, ...storedOverrides };
     } catch (error) {
       console.warn('Unable to load stored theme overrides.', error);
-      return {};
+      return { ...DEFAULT_THEME_OVERRIDES };
     }
   };
 
@@ -293,6 +296,72 @@
     }
   };
 
+  const parseFormSubmitResponse = async (response) => {
+    const resultText = await response.text();
+    let parsedResult = null;
+
+    if (resultText) {
+      try {
+        parsedResult = JSON.parse(resultText);
+      } catch (error) {
+        parsedResult = null;
+      }
+    }
+
+    if (!response.ok) {
+      const errorMessage = parsedResult?.message || `Request failed with status ${response.status}`;
+      const error = new Error(errorMessage);
+      error.status = response.status;
+      error.details = parsedResult;
+      throw error;
+    }
+
+    if (parsedResult && String(parsedResult.success).toLowerCase() === 'false') {
+      const error = new Error(parsedResult.message || 'The form service rejected the submission.');
+      error.status = response.status;
+      error.details = parsedResult;
+      throw error;
+    }
+
+    return {
+      message: parsedResult?.message || ''
+    };
+  };
+
+  const sendJsonPayload = async (endpoint, payload) => {
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+        'X-Requested-With': 'XMLHttpRequest'
+      },
+      body: JSON.stringify(payload)
+    });
+
+    return parseFormSubmitResponse(response);
+  };
+
+  const sendFormDataPayload = async (endpoint, payload) => {
+    const formData = new FormData();
+    Object.entries(payload).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        formData.append(key, value);
+      }
+    });
+
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        Accept: 'application/json',
+        'X-Requested-With': 'XMLHttpRequest'
+      },
+      body: formData
+    });
+
+    return parseFormSubmitResponse(response);
+  };
+
   const buildEndpoint = (details = {}) => {
     const emailTarget = details.formRecipient || details.emailAddress;
 
@@ -502,12 +571,11 @@
       setStatusMessage(statusMessage, null, details.submittingMessage || 'Sending your message…');
       submitButton.disabled = true;
 
-    const sendRequest = async () => {
-      if (!endpoint) {
-        throw new Error('No delivery endpoint configured.');
-      }
-
       try {
+        if (!endpoint) {
+          throw new Error('No delivery endpoint configured.');
+        }
+
         const requestPayload = {
           name: payload.name,
           email: payload.email,
@@ -525,37 +593,37 @@
           requestPayload._subject = details.subject;
         }
 
-        const response = await fetch(endpoint, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Accept: 'application/json'
-          },
-          body: JSON.stringify(requestPayload)
-        });
-
-        if (!response.ok) {
-          throw new Error('Request failed');
+        let result;
+        try {
+          result = await sendJsonPayload(endpoint, requestPayload);
+        } catch (jsonError) {
+          console.warn('JSON submission failed, retrying with FormData.', jsonError);
+          result = await sendFormDataPayload(endpoint, requestPayload);
         }
 
-        const result = await response.json().catch(() => null);
-        if (result && String(result.success).toLowerCase() === 'false') {
-          throw new Error('Request failed');
-        }
-
-        return response;
+        contactForm.reset();
+        setStatusMessage(
+          statusMessage,
+          'success',
+          result?.message || details.successMessage || 'Thank you! We will be in touch shortly.'
+        );
       } catch (error) {
         console.error('Contact form submission failed.', error);
-        throw new Error('Network request failed');
-      }
-    };
-
-      try {
-        await sendRequest();
-        contactForm.reset();
-        setStatusMessage(statusMessage, 'success', details.successMessage || 'Thank you! We will be in touch shortly.');
-      } catch (error) {
-        setStatusMessage(statusMessage, 'error', details.errorMessage || 'Sorry, something went wrong. Please try again later.');
+        let additionalInfo = '';
+        if (error?.message) {
+          if (!/request failed/i.test(error.message) || /verify/i.test(error.message)) {
+            additionalInfo = ` ${error.message}`;
+          }
+        }
+        if (!additionalInfo) {
+          additionalInfo =
+            ' If this is your first submission, check your inbox for a verification email from the form provider.';
+        }
+        setStatusMessage(
+          statusMessage,
+          'error',
+          `${details.errorMessage || 'Sorry, something went wrong. Please try again later.'}${additionalInfo}`
+        );
       } finally {
         submitButton.disabled = false;
       }
