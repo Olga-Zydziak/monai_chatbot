@@ -4,6 +4,7 @@
   --color-surface-alt: #1f2431;
   --color-accent: #5a8dee;
   --color-accent-muted: rgba(90, 141, 238, 0.12);
+  --color-accent-rgb: 90, 141, 238;
   --color-text-primary: #f5f7ff;
   --color-text-secondary: #b4bbd6;
   --color-border: rgba(244, 246, 255, 0.08);
@@ -11,6 +12,10 @@
   --color-error: #ff6b81;
   --color-error-muted: rgba(255, 107, 129, 0.12);
   --color-error-muted-strong: rgba(255, 107, 129, 0.2);
+  --page-shade-direction: to bottom;
+  --page-shade-strength: 0.18;
+  --page-shade-soft: 0.06;
+  --page-shade-panel: 0.12;
 
   --font-family-base: 'Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   --font-size-300: clamp(0.85rem, 0.8rem + 0.3vw, 0.95rem);
@@ -34,13 +39,13 @@
   --shadow-elevated: 0 20px 45px rgba(6, 9, 19, 0.45);
   --transition-base: 200ms ease;
   --max-content-width: 72rem;
-  --layout-gutter: clamp(1.25rem, 4vw, 3rem);
-  --layout-gap: clamp(2rem, 4vw, 3.5rem);
-  --layout-section-spacing: clamp(2.5rem, 6vw, 4.5rem);
+  --layout-gutter: clamp(0.75rem, 2.75vw, 2rem);
+  --layout-gap: clamp(1.5rem, 3.25vw, 3rem);
+  --layout-section-spacing: clamp(1.75rem, 4.5vw, 3.5rem);
   --layout-sidebar-width: clamp(14rem, 18vw, 20rem);
-  --panel-padding-block: clamp(1.75rem, 1.3rem + 1vw, 2.75rem);
-  --panel-padding-inline: clamp(1.5rem, 1.1rem + 1.8vw, 3rem);
-  --card-padding: clamp(1.5rem, 1.1rem + 1.5vw, 2.75rem);
+  --panel-padding-block: clamp(1.5rem, 1rem + 1vw, 2.25rem);
+  --panel-padding-inline: clamp(1.25rem, 0.9rem + 1.5vw, 2.5rem);
+  --card-padding: clamp(1.25rem, 0.9rem + 1vw, 2.25rem);
 }
 
 * {
@@ -78,7 +83,13 @@ input:focus-visible {
 }
 
 .page {
-  background: radial-gradient(circle at top right, rgba(90, 141, 238, 0.18), transparent 55%), var(--color-background);
+  background:
+    linear-gradient(
+      var(--page-shade-direction, to bottom),
+      rgba(var(--color-accent-rgb, 90, 141, 238), var(--page-shade-strength, 0.18)) 0%,
+      rgba(var(--color-accent-rgb, 90, 141, 238), 0) 65%
+    ),
+    var(--color-background);
 }
 
 .page--category {
@@ -120,7 +131,11 @@ input:focus-visible {
 .site-header__hero {
   height: 100%;
   min-height: 5rem;
-  background: linear-gradient(135deg, rgba(90, 141, 238, 0.32), rgba(90, 141, 238, 0.06));
+  background: linear-gradient(
+      var(--page-shade-direction, to bottom),
+      rgba(var(--color-accent-rgb, 90, 141, 238), var(--page-shade-strength, 0.18)),
+      rgba(var(--color-accent-rgb, 90, 141, 238), var(--page-shade-soft, 0.06))
+    );
   border-radius: var(--radius-lg);
   border: 1px solid var(--color-border);
   box-shadow: var(--shadow-elevated);
@@ -294,7 +309,12 @@ input:focus-visible {
   padding: var(--card-padding);
   border-radius: var(--radius-lg);
   border: 1px solid var(--color-border);
-  background: linear-gradient(145deg, rgba(90, 141, 238, 0.12), transparent 70%);
+  background: linear-gradient(
+      var(--page-shade-direction, to bottom),
+      rgba(var(--color-accent-rgb, 90, 141, 238), var(--page-shade-panel, 0.12)),
+      rgba(var(--color-accent-rgb, 90, 141, 238), 0)
+    ),
+    var(--color-surface-alt);
 }
 
 .panels__contact-list {
@@ -531,6 +551,45 @@ input:focus-visible {
 
 .content-manager__field--range {
   gap: var(--space-sm);
+}
+
+.content-manager__field--segmented {
+  gap: var(--space-sm);
+}
+
+.content-manager__segmented {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+}
+
+.content-manager__segmented-button {
+  border: 1px solid var(--color-border);
+  background-color: var(--color-surface);
+  color: var(--color-text-secondary);
+  border-radius: var(--radius-sm);
+  padding: var(--space-xs) var(--space-md);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: var(--font-size-300);
+  cursor: pointer;
+  transition: background-color var(--transition-base), border-color var(--transition-base), color var(--transition-base),
+    box-shadow var(--transition-base);
+}
+
+.content-manager__segmented-button:hover,
+.content-manager__segmented-button:focus-visible {
+  color: var(--color-text-primary);
+  border-color: var(--color-accent);
+  background-color: var(--color-accent-muted);
+  box-shadow: var(--shadow-elevated);
+}
+
+.content-manager__segmented-button--active {
+  color: var(--color-text-primary);
+  border-color: var(--color-accent);
+  background-color: rgba(var(--color-accent-rgb, 90, 141, 238), 0.18);
+  box-shadow: var(--shadow-elevated);
 }
 
 .content-manager__color-controls {

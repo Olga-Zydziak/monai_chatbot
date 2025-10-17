@@ -7,13 +7,20 @@
     '--color-surface-alt',
     '--color-accent',
     '--color-accent-muted',
+    '--color-accent-rgb',
     '--color-text-primary',
     '--color-text-secondary',
-    '--shadow-elevated'
+    '--shadow-elevated',
+    '--page-shade-direction',
+    '--page-shade-strength',
+    '--page-shade-soft',
+    '--page-shade-panel'
   ];
 
   const DEFAULT_ACCENT_SHADE = 12; // percentage
   const DEFAULT_SHADOW_ALPHA = 45; // percentage
+  const DEFAULT_BACKGROUND_SHADE = 18; // percentage
+  const DEFAULT_SHADE_DIRECTION = 'to bottom';
   const DEFAULT_THEME_OVERRIDES = window.PUBLISHING_THEME_OVERRIDES || {};
 
   const DEFAULT_CONTENT = window.PUBLISHING_TAB_CONTENT || {};
@@ -134,6 +141,23 @@
     return `rgba(${r}, ${g}, ${b}, ${alpha})`;
   };
 
+  const computeAccentRgb = (hex) => {
+    const normalized = toFullHex(hex);
+    if (!normalized) {
+      return '';
+    }
+
+    const bigint = parseInt(normalized.slice(1), 16);
+    const r = (bigint >> 16) & 255;
+    const g = (bigint >> 8) & 255;
+    const b = bigint & 255;
+    return `${r}, ${g}, ${b}`;
+  };
+
+  const computeShadeSoft = (strength) => clamp(Number(strength) / 3, 0, 0.35).toFixed(2);
+
+  const computeShadePanel = (strength) => clamp(Number(strength) * 0.6, 0, 0.45).toFixed(2);
+
   const extractAlpha = (value) => {
     if (typeof value !== 'string') {
       return null;
@@ -171,10 +195,30 @@
   const applyThemeOverrides = (overrides = {}) => {
     const root = document.documentElement;
     const merged = { ...overrides };
-    if (merged['--color-accent'] && !merged['--color-accent-muted']) {
-      const accentMuted = computeAccentMuted(merged['--color-accent']);
-      if (accentMuted) {
-        merged['--color-accent-muted'] = accentMuted;
+    if (merged['--color-accent']) {
+      if (!merged['--color-accent-muted']) {
+        const accentMuted = computeAccentMuted(merged['--color-accent']);
+        if (accentMuted) {
+          merged['--color-accent-muted'] = accentMuted;
+        }
+      }
+      if (!merged['--color-accent-rgb']) {
+        const accentRgb = computeAccentRgb(merged['--color-accent']);
+        if (accentRgb) {
+          merged['--color-accent-rgb'] = accentRgb;
+        }
+      }
+    }
+
+    if (merged['--page-shade-strength']) {
+      const numericStrength = Number(merged['--page-shade-strength']);
+      if (!Number.isNaN(numericStrength)) {
+        if (!merged['--page-shade-soft']) {
+          merged['--page-shade-soft'] = computeShadeSoft(numericStrength);
+        }
+        if (!merged['--page-shade-panel']) {
+          merged['--page-shade-panel'] = computeShadePanel(numericStrength);
+        }
       }
     }
 
@@ -256,6 +300,9 @@
   const accentShadeValue = document.getElementById('manager-accent-shade-value');
   const shadowDepthInput = document.getElementById('manager-shadow-depth');
   const shadowDepthValue = document.getElementById('manager-shadow-depth-value');
+  const backgroundShadeInput = document.getElementById('manager-background-shade');
+  const backgroundShadeValue = document.getElementById('manager-background-shade-value');
+  const shadeDirectionButtons = Array.from(document.querySelectorAll('[data-shade-direction]'));
   document.querySelectorAll('[data-theme-picker]').forEach((input) => {
     if (input instanceof HTMLInputElement && input.dataset.themePicker) {
       themePickers.set(input.dataset.themePicker, input);
@@ -402,6 +449,43 @@
     updateAccentShadeValue(percent);
   };
 
+  const setActiveShadeDirectionButton = (direction) => {
+    shadeDirectionButtons.forEach((button) => {
+      const isActive = button.dataset.shadeDirection === direction;
+      button.classList.toggle('content-manager__segmented-button--active', isActive);
+      button.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+    });
+  };
+
+  const syncShadeDirectionControl = () => {
+    if (!shadeDirectionButtons.length) {
+      return;
+    }
+
+    const stored =
+      themeOverrides['--page-shade-direction'] ||
+      getComputedTokenValue('--page-shade-direction') ||
+      DEFAULT_SHADE_DIRECTION;
+    const direction = stored && stored.trim() ? stored.trim() : DEFAULT_SHADE_DIRECTION;
+    setActiveShadeDirectionButton(direction);
+  };
+
+  const syncBackgroundShadeControl = () => {
+    if (!backgroundShadeInput) {
+      return;
+    }
+
+    const stored = themeOverrides['--page-shade-strength'] || getComputedTokenValue('--page-shade-strength');
+    const numeric = Number(stored);
+    const percent = Number.isNaN(numeric)
+      ? DEFAULT_BACKGROUND_SHADE
+      : Math.round(clamp(numeric, 0, 0.6) * 100);
+    backgroundShadeInput.value = String(percent);
+    if (backgroundShadeValue) {
+      backgroundShadeValue.textContent = `${percent}%`;
+    }
+  };
+
   const syncShadowControl = () => {
     if (!shadowDepthInput) {
       return;
@@ -421,6 +505,8 @@
       syncThemeField(token);
     });
     syncAccentShadeControl();
+    syncBackgroundShadeControl();
+    syncShadeDirectionControl();
     syncShadowControl();
   };
 
@@ -430,19 +516,36 @@
     }
 
     const trimmedValue = typeof value === 'string' ? value.trim() : value;
-    if (!trimmedValue) {
+    if (!trimmedValue && trimmedValue !== 0) {
       delete themeOverrides[token];
       if (token === '--color-accent') {
         delete themeOverrides['--color-accent-muted'];
+        delete themeOverrides['--color-accent-rgb'];
+      }
+      if (token === '--page-shade-strength') {
+        delete themeOverrides['--page-shade-soft'];
+        delete themeOverrides['--page-shade-panel'];
       }
     } else {
-      themeOverrides[token] = trimmedValue;
+      let storedValue = trimmedValue;
+      if (token === '--page-shade-strength') {
+        const numericStrength = clamp(Number(trimmedValue), 0, 1);
+        storedValue = numericStrength.toFixed(2);
+        themeOverrides['--page-shade-soft'] = computeShadeSoft(numericStrength);
+        themeOverrides['--page-shade-panel'] = computeShadePanel(numericStrength);
+      }
+
+      themeOverrides[token] = storedValue;
       if (token === '--color-accent') {
         const shadePercent = accentShadeInput ? Number(accentShadeInput.value) : DEFAULT_ACCENT_SHADE;
         const alpha = clamp((Number.isNaN(shadePercent) ? DEFAULT_ACCENT_SHADE : shadePercent) / 100, 0, 1);
         const accentMuted = computeAccentMuted(trimmedValue, alpha || DEFAULT_ACCENT_SHADE / 100);
         if (accentMuted) {
           themeOverrides['--color-accent-muted'] = accentMuted;
+        }
+        const accentRgb = computeAccentRgb(trimmedValue);
+        if (accentRgb) {
+          themeOverrides['--color-accent-rgb'] = accentRgb;
         }
       }
     }
@@ -453,6 +556,12 @@
     if (token === '--color-accent') {
       syncThemeField('--color-accent-muted');
       syncAccentShadeControl();
+    }
+    if (token === '--page-shade-strength') {
+      syncBackgroundShadeControl();
+    }
+    if (token === '--page-shade-direction') {
+      syncShadeDirectionControl();
     }
     if (token === '--color-accent-muted') {
       syncAccentShadeControl();
@@ -501,6 +610,32 @@
         message: 'Accent shading updated. Refresh the home page to preview changes.'
       });
     }
+  });
+
+  backgroundShadeInput?.addEventListener('input', () => {
+    const rawValue = Number(backgroundShadeInput.value);
+    const percent = clamp(Number.isNaN(rawValue) ? DEFAULT_BACKGROUND_SHADE : rawValue, 0, 60);
+    backgroundShadeInput.value = String(percent);
+    if (backgroundShadeValue) {
+      backgroundShadeValue.textContent = `${percent}%`;
+    }
+    const strength = clamp(percent / 100, 0, 0.6);
+    updateThemeToken('--page-shade-strength', strength, {
+      message: 'Background shading updated. Refresh the home page to preview changes.'
+    });
+  });
+
+  const handleShadeDirectionSelection = (direction) => {
+    const nextDirection = direction && direction.trim() ? direction.trim() : DEFAULT_SHADE_DIRECTION;
+    updateThemeToken('--page-shade-direction', nextDirection, {
+      message: 'Background shading origin updated. Refresh the home page to preview changes.'
+    });
+  };
+
+  shadeDirectionButtons.forEach((button) => {
+    button.addEventListener('click', () => {
+      handleShadeDirectionSelection(button.dataset.shadeDirection || DEFAULT_SHADE_DIRECTION);
+    });
   });
 
   shadowDepthInput?.addEventListener('input', () => {

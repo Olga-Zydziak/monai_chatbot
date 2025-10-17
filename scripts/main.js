@@ -8,9 +8,14 @@
     '--color-surface-alt',
     '--color-accent',
     '--color-accent-muted',
+    '--color-accent-rgb',
     '--color-text-primary',
     '--color-text-secondary',
-    '--shadow-elevated'
+    '--shadow-elevated',
+    '--page-shade-direction',
+    '--page-shade-strength',
+    '--page-shade-soft',
+    '--page-shade-panel'
   ];
 
   const toFullHex = (value) => {
@@ -48,6 +53,8 @@
     return '';
   };
 
+  const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
+
   const computeAccentMuted = (hex, alpha = 0.12) => {
     const normalized = toFullHex(hex);
     if (!normalized) {
@@ -60,6 +67,23 @@
     const b = bigint & 255;
     return `rgba(${r}, ${g}, ${b}, ${alpha})`;
   };
+
+  const computeAccentRgb = (hex) => {
+    const normalized = toFullHex(hex);
+    if (!normalized) {
+      return '';
+    }
+
+    const bigint = parseInt(normalized.slice(1), 16);
+    const r = (bigint >> 16) & 255;
+    const g = (bigint >> 8) & 255;
+    const b = bigint & 255;
+    return `${r}, ${g}, ${b}`;
+  };
+
+  const computeShadeSoft = (strength) => clamp(Number(strength) / 3, 0, 0.35).toFixed(2);
+
+  const computeShadePanel = (strength) => clamp(Number(strength) * 0.6, 0, 0.45).toFixed(2);
 
   const loadThemeOverrides = () => {
     try {
@@ -75,10 +99,30 @@
   const applyThemeOverrides = (overrides = {}) => {
     const root = document.documentElement;
     const merged = { ...overrides };
-    if (merged['--color-accent'] && !merged['--color-accent-muted']) {
-      const accentMuted = computeAccentMuted(merged['--color-accent']);
-      if (accentMuted) {
-        merged['--color-accent-muted'] = accentMuted;
+    if (merged['--color-accent']) {
+      if (!merged['--color-accent-muted']) {
+        const accentMuted = computeAccentMuted(merged['--color-accent']);
+        if (accentMuted) {
+          merged['--color-accent-muted'] = accentMuted;
+        }
+      }
+      if (!merged['--color-accent-rgb']) {
+        const accentRgb = computeAccentRgb(merged['--color-accent']);
+        if (accentRgb) {
+          merged['--color-accent-rgb'] = accentRgb;
+        }
+      }
+    }
+
+    if (merged['--page-shade-strength']) {
+      const numericStrength = Number(merged['--page-shade-strength']);
+      if (!Number.isNaN(numericStrength)) {
+        if (!merged['--page-shade-soft']) {
+          merged['--page-shade-soft'] = computeShadeSoft(numericStrength);
+        }
+        if (!merged['--page-shade-panel']) {
+          merged['--page-shade-panel'] = computeShadePanel(numericStrength);
+        }
       }
     }
 
@@ -328,6 +372,84 @@
     };
   };
 
+  const submitViaVanillaTransport = (endpoint, payload = {}, details = {}) =>
+    new Promise((resolve) => {
+      if (!endpoint) {
+        resolve(false);
+        return;
+      }
+
+      const frame = document.createElement('iframe');
+      const frameName = `contact-transport-${Date.now()}`;
+      frame.name = frameName;
+      frame.hidden = true;
+      frame.setAttribute('aria-hidden', 'true');
+      frame.style.position = 'absolute';
+      frame.style.width = '0';
+      frame.style.height = '0';
+      frame.style.border = '0';
+
+      const form = document.createElement('form');
+      form.method = 'post';
+      form.action = endpoint;
+      form.target = frameName;
+      form.acceptCharset = 'utf-8';
+      form.style.position = 'absolute';
+      form.style.left = '-9999px';
+      form.style.top = 'auto';
+      form.style.width = '1px';
+      form.style.height = '1px';
+
+      const appendField = (name, value) => {
+        if (value === undefined || value === null || `${value}`.trim() === '') {
+          return;
+        }
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = name;
+        input.value = `${value}`;
+        form.appendChild(input);
+      };
+
+      Object.entries(payload).forEach(([key, value]) => {
+        appendField(key, value);
+      });
+
+      if (!('_next' in payload)) {
+        appendField('_next', details.nextUrl || window.location.href);
+      }
+
+      document.body.append(frame, form);
+
+      const cleanup = () => {
+        form.remove();
+        frame.remove();
+      };
+
+      const timeoutId = window.setTimeout(() => {
+        cleanup();
+        resolve(false);
+      }, 8000);
+
+      frame.addEventListener(
+        'load',
+        () => {
+          window.clearTimeout(timeoutId);
+          cleanup();
+          resolve(true);
+        },
+        { once: true }
+      );
+
+      try {
+        form.submit();
+      } catch (submissionError) {
+        window.clearTimeout(timeoutId);
+        cleanup();
+        resolve(false);
+      }
+    });
+
   const sendJsonPayload = async (endpoint, payload) => {
     const response = await fetch(endpoint, {
       method: 'POST',
@@ -380,6 +502,18 @@
     }
 
     return `https://formsubmit.co/ajax/${encodeURIComponent(emailTarget)}`;
+  };
+
+  const normaliseFallbackEndpoint = (endpoint) => {
+    if (!endpoint) {
+      return '';
+    }
+
+    if (endpoint.includes('/ajax/')) {
+      return endpoint.replace('/ajax/', '/');
+    }
+
+    return endpoint;
   };
 
   const normaliseContactDetails = (details = {}) => {
@@ -593,20 +727,45 @@
           requestPayload._subject = details.subject;
         }
 
-        let result;
+        let result = null;
+        let fallbackUsed = false;
+
         try {
           result = await sendJsonPayload(endpoint, requestPayload);
         } catch (jsonError) {
           console.warn('JSON submission failed, retrying with FormData.', jsonError);
-          result = await sendFormDataPayload(endpoint, requestPayload);
+          try {
+            result = await sendFormDataPayload(endpoint, requestPayload);
+          } catch (formError) {
+            console.warn('FormData submission failed, attempting vanilla transport.', formError);
+            const fallbackEndpoint = normaliseFallbackEndpoint(endpoint);
+            const fallbackResult = await submitViaVanillaTransport(fallbackEndpoint, requestPayload, {
+              subject: details.subject,
+              nextUrl: window.location.href
+            });
+            if (!fallbackResult) {
+              throw formError;
+            }
+            fallbackUsed = true;
+          }
         }
 
         contactForm.reset();
-        setStatusMessage(
-          statusMessage,
-          'success',
-          result?.message || details.successMessage || 'Thank you! We will be in touch shortly.'
-        );
+        if (fallbackUsed) {
+          const successCopy =
+            details.successMessage || 'Thank you! We will be in touch shortly.';
+          setStatusMessage(
+            statusMessage,
+            'success',
+            `${successCopy} Jeśli to Twoja pierwsza wiadomość, sprawdź skrzynkę e-mail w celu potwierdzenia formularza.`
+          );
+        } else {
+          setStatusMessage(
+            statusMessage,
+            'success',
+            result?.message || details.successMessage || 'Thank you! We will be in touch shortly.'
+          );
+        }
       } catch (error) {
         console.error('Contact form submission failed.', error);
         let additionalInfo = '';

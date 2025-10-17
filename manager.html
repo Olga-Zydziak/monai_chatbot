@@ -139,6 +139,35 @@
             </section>
             <section class="content-manager__panel content-manager__panel--shading">
               <h2 class="content-manager__panel-title">Shading &amp; depth</h2>
+              <div class="content-manager__field content-manager__field--segmented">
+                <span class="content-manager__label" id="manager-shade-direction-label">Background shading origin</span>
+                <div class="content-manager__segmented" role="group" aria-labelledby="manager-shade-direction-label">
+                  <button
+                    class="content-manager__segmented-button content-manager__segmented-button--active"
+                    type="button"
+                    data-shade-direction="to bottom"
+                    aria-pressed="true"
+                  >
+                    From top
+                  </button>
+                  <button
+                    class="content-manager__segmented-button"
+                    type="button"
+                    data-shade-direction="to top"
+                    aria-pressed="false"
+                  >
+                    From bottom
+                  </button>
+                </div>
+              </div>
+              <div class="content-manager__field content-manager__field--range">
+                <label class="content-manager__label" for="manager-background-shade">Background shading strength</label>
+                <div class="content-manager__range">
+                  <input class="content-manager__range-input" id="manager-background-shade" type="range" min="0" max="60" step="1" value="18" />
+                  <output class="content-manager__range-value" id="manager-background-shade-value" for="manager-background-shade">18%</output>
+                </div>
+                <p class="content-manager__hint">Controls the gradient overlay behind the entire page background.</p>
+              </div>
               <div class="content-manager__field content-manager__field--range">
                 <label class="content-manager__label" for="manager-accent-shade">Accent shading</label>
                 <div class="content-manager__range">
