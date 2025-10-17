@@ -102,6 +102,8 @@ const TOPIC_RECIPIENTS = {
   authors: 'authors@yourpublishinghouse.com'
 };
 
+const CONTACT_ENDPOINT_BASE = 'https://formsubmit.co/ajax';
+
 const tabButtons = document.querySelectorAll('.tabs__button');
 const tabPanel = document.getElementById('tab-panel');
 const tabPanelTitle = document.getElementById('tab-panel-title');
@@ -198,7 +200,56 @@ const renderTabContent = (tabKey, trigger, { focusPanel = true } = {}) => {
     formElement.appendChild(submitButton);
     formElement.setAttribute('aria-describedby', formStatus.id);
 
-    const onSubmit = (event) => {
+    const setSubmitting = (submitting) => {
+      submitButton.disabled = submitting;
+      submitButton.setAttribute('aria-busy', submitting ? 'true' : 'false');
+      submitButton.textContent = submitting ? 'Sending…' : formConfig.submitText || 'Submit';
+    };
+
+    const attemptDirectDelivery = async (recipient, payload) => {
+      if (!window.fetch) {
+        return false;
+      }
+
+      try {
+        const response = await fetch(
+          `${CONTACT_ENDPOINT_BASE}/${encodeURIComponent(recipient)}`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Accept: 'application/json'
+            },
+            body: JSON.stringify(payload)
+          }
+        );
+
+        if (!response.ok) {
+          return false;
+        }
+
+        const data = await response.json();
+        return Boolean(data.success);
+      } catch (error) {
+        return false;
+      }
+    };
+
+    const openMailClientFallback = (mailtoUrl) => {
+      const temporaryLink = document.createElement('a');
+      temporaryLink.href = mailtoUrl;
+      temporaryLink.rel = 'noopener noreferrer';
+      temporaryLink.dataset.autoMailto = 'true';
+      document.body.appendChild(temporaryLink);
+      temporaryLink.click();
+      requestAnimationFrame(() => {
+        if (temporaryLink.parentNode) {
+          temporaryLink.parentNode.removeChild(temporaryLink);
+        }
+      });
+    };
+
+    const onSubmit = async (event) => {
       event.preventDefault();
       const formData = new FormData(formElement);
       const requiredFields = formConfig.fields.filter((field) => field.required);
@@ -228,6 +279,8 @@ const renderTabContent = (tabKey, trigger, { focusPanel = true } = {}) => {
         return;
       }
 
+      setSubmitting(true);
+
       const name = (formData.get('name') || '').toString().trim();
       const topic = (formData.get('topic') || 'general').toString();
       const emailValue = (formData.get('email') || '').toString().trim();
@@ -240,32 +293,49 @@ const renderTabContent = (tabKey, trigger, { focusPanel = true } = {}) => {
       );
       const mailtoUrl = `mailto:${recipient}?subject=${subject}&body=${body}`;
 
-      let mailClientOpened = false;
+      const payload = {
+        name,
+        email: emailValue,
+        topic,
+        message,
+        _subject: `Publishing inquiry (${topic})`,
+        _replyto: emailValue
+      };
 
       try {
-        const mailtoWindow = window.open(mailtoUrl, '_blank', 'noopener');
-        if (mailtoWindow) {
-          mailClientOpened = true;
-          mailtoWindow.opener = null;
+        const delivered = await attemptDirectDelivery(recipient, payload);
+        let statusMessage =
+          formConfig.successMessage ||
+          'Thank you for your message. We will respond shortly.';
+
+        formStatus.classList.remove('contact-form__status--error');
+
+        if (!delivered) {
+          if (navigator.clipboard) {
+            navigator.clipboard
+              .writeText(`To: ${recipient}\nSubject: Publishing inquiry (${topic})\n\n${message}`)
+              .catch(() => {});
+          }
+
+          openMailClientFallback(mailtoUrl);
+          statusMessage =
+            'Your default mail application has been prompted. If it does not appear, paste the copied details into any email client.';
+        } else {
+          statusMessage =
+            formConfig.successMessage ||
+            'Thank you for your message. Our team will get back to you shortly.';
         }
+
+        formElement.reset();
+        formStatus.textContent = statusMessage;
       } catch (error) {
-        // Intentionally ignored — we fall back to a location change below.
+        formStatus.classList.add('contact-form__status--error');
+        formStatus.textContent =
+          'We were unable to submit your message automatically. Please try again or contact hello@yourpublishinghouse.com directly.';
+        openMailClientFallback(mailtoUrl);
+      } finally {
+        setSubmitting(false);
       }
-
-      if (!mailClientOpened && navigator.clipboard) {
-        navigator.clipboard
-          .writeText(`To: ${recipient}\nSubject: Publishing inquiry (${topic})\n\n${message}`)
-          .catch(() => {});
-      }
-
-      if (!mailClientOpened) {
-        window.location.assign(mailtoUrl);
-      }
-
-      formElement.reset();
-      formStatus.textContent =
-        formConfig.successMessage ||
-        'Thank you for your message. We will respond shortly. If your mail app did not open, the details have been copied to your clipboard.';
     };
 
     formElement.addEventListener('submit', onSubmit);
