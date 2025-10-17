@@ -366,6 +366,8 @@ button:focus-visible {
   background-color: var(--color-surface);
   box-shadow: var(--shadow-elevated);
   overflow: hidden;
+  --manager-gradient-start-rgba: rgba(90, 141, 238, 0.45);
+  --manager-gradient-end-rgba: rgba(15, 17, 23, 0.9);
 }
 
 .manager__container::before {
@@ -374,8 +376,8 @@ button:focus-visible {
   inset: 0;
   background: linear-gradient(
     var(--manager-gradient-angle, to bottom),
-    rgba(90, 141, 238, 0.45) 0%,
-    rgba(15, 17, 23, 0.9) 65%
+    var(--manager-gradient-start-rgba) 0%,
+    var(--manager-gradient-end-rgba) 65%
   );
   pointer-events: none;
   z-index: 0;
@@ -471,32 +473,149 @@ button:focus-visible {
   color: var(--color-text-secondary);
 }
 
-.manager__list {
-  list-style: none;
+.manager__grid {
+  display: grid;
+  gap: var(--space-lg);
+}
+
+.manager-form {
+  display: grid;
+  gap: var(--space-lg);
+  padding: var(--space-lg);
+  border-radius: var(--radius-lg);
+  background-color: rgba(15, 17, 23, 0.6);
+  border: 1px solid rgba(244, 246, 255, 0.08);
+}
+
+.manager-form__section {
+  border: 0;
   margin: 0;
   padding: 0;
   display: grid;
   gap: var(--space-md);
 }
 
-.manager__list-item {
-  background-color: rgba(22, 25, 34, 0.85);
-  border-radius: var(--radius-md);
-  border: 1px solid rgba(244, 246, 255, 0.08);
-  padding: var(--space-lg);
+.manager-form__legend {
+  font-size: var(--font-size-400);
+  font-weight: 600;
+  margin-bottom: var(--space-xs);
+}
+
+.manager-form__field {
   display: grid;
   gap: var(--space-2xs);
 }
 
-.manager__list-heading {
+.manager-form__label {
+  font-size: var(--font-size-300);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+}
+
+.manager-form__input,
+.manager-form__textarea {
+  background-color: rgba(22, 25, 34, 0.85);
+  border: 1px solid rgba(244, 246, 255, 0.12);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-primary);
+  padding: var(--space-sm);
+  font-size: var(--font-size-400);
+  transition: border-color var(--transition-base), box-shadow var(--transition-base);
+}
+
+.manager-form__input:focus-visible,
+.manager-form__textarea:focus-visible {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px rgba(90, 141, 238, 0.3);
+}
+
+.manager-form__textarea {
+  resize: vertical;
+  min-height: 8rem;
+}
+
+.manager-form__hint {
+  margin: 0;
+  font-size: var(--font-size-300);
+  color: var(--color-text-secondary);
+}
+
+.manager-form__submit {
+  justify-self: start;
+  padding: var(--space-sm) var(--space-lg);
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+  background-color: var(--color-accent);
+  color: #0f1117;
+  font-size: var(--font-size-400);
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform var(--transition-base), box-shadow var(--transition-base);
+}
+
+.manager-form__submit:hover,
+.manager-form__submit:focus-visible {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 24px rgba(90, 141, 238, 0.35);
+}
+
+.manager-form__status {
+  margin: 0;
+  font-size: var(--font-size-300);
+  color: var(--color-success);
+  min-height: 1.5em;
+}
+
+.manager__preview {
+  display: grid;
+  gap: var(--space-sm);
+  padding: var(--space-lg);
+  border-radius: var(--radius-lg);
+  border: 1px solid rgba(244, 246, 255, 0.08);
+  background-color: rgba(22, 25, 34, 0.65);
+}
+
+.manager__preview-title {
   margin: 0;
   font-size: var(--font-size-500);
 }
 
-.manager__list-text {
+.manager__preview-intro {
   margin: 0;
-  font-size: var(--font-size-400);
+  font-size: var(--font-size-300);
   color: var(--color-text-secondary);
+}
+
+.manager__preview-heading {
+  margin: var(--space-xs) 0 0;
+  font-size: var(--font-size-500);
+}
+
+.manager__preview-body {
+  display: grid;
+  gap: var(--space-xs);
+}
+
+.manager__preview-body p {
+  margin: 0;
+  color: var(--color-text-secondary);
+}
+
+.manager__preview-note {
+  font-size: var(--font-size-300);
+}
+
+.manager__preview-body ul {
+  margin: 0;
+  padding-left: var(--space-xl);
+  display: grid;
+  gap: var(--space-2xs);
+  color: var(--color-text-secondary);
+}
+
+.manager-form__status--error {
+  color: var(--color-error);
 }
 
 .manager__container[data-gradient-direction='top'] {
@@ -590,6 +709,11 @@ button:focus-visible {
   .layout__content {
     flex: 1;
     padding: var(--space-2xl) var(--space-lg);
+  }
+
+  .manager__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
   }
 }
 
