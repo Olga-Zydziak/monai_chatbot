@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Manager Panel — Publishing Portfolio</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body class="page page--manager">
+    <header class="page__header site-header site-header--manager">
+      <div class="site-header__branding">
+        <div class="site-header__logo" aria-label="Logo placeholder"></div>
+        <div class="site-header__hero"></div>
+      </div>
+      <nav class="manager-nav" aria-label="Manager navigation">
+        <a class="manager-nav__link" href="index.html">← Back to public site</a>
+      </nav>
+    </header>
+    <main class="page__main manager-page__main">
+      <section class="manager" aria-labelledby="manager-panel-title">
+        <div
+          class="manager__container"
+          data-gradient-direction="top"
+          data-gradient-start="#5a8dee"
+          data-gradient-end="#0f1117"
+        >
+          <header class="manager__header">
+            <div>
+              <p class="manager__eyebrow">Internal dashboard</p>
+              <h1 class="manager__title" id="manager-panel-title">Manager panel</h1>
+            </div>
+            <div class="manager__controls" role="group" aria-label="Gradient shading origin">
+              <span class="manager__controls-label" id="manager-controls-label">Shading origin</span>
+              <div class="manager__controls-buttons" aria-labelledby="manager-controls-label">
+                <button class="manager__control-button manager__control-button--active" type="button" data-gradient="top">
+                  Top
+                </button>
+                <button class="manager__control-button" type="button" data-gradient="bottom">Bottom</button>
+              </div>
+            </div>
+          </header>
+          <div class="manager__content">
+            <p class="manager__lead">
+              Personalise the public site without leaving this dashboard: adjust the manager backdrop and curate copy for every
+              tab.
+            </p>
+            <div class="manager__grid">
+              <form class="manager-form" id="manager-form" novalidate aria-describedby="manager-form-status">
+                <fieldset class="manager-form__section">
+                  <legend class="manager-form__legend">Background shading</legend>
+                  <div class="manager-form__field">
+                    <label class="manager-form__label" for="manager-gradient-start">Gradient start</label>
+                    <input
+                      class="manager-form__input"
+                      type="color"
+                      id="manager-gradient-start"
+                      name="gradientStart"
+                      value="#5a8dee"
+                      aria-describedby="manager-gradient-help"
+                    />
+                  </div>
+                  <div class="manager-form__field">
+                    <label class="manager-form__label" for="manager-gradient-end">Gradient end</label>
+                    <input class="manager-form__input" type="color" id="manager-gradient-end" name="gradientEnd" value="#0f1117" />
+                  </div>
+                  <p class="manager-form__hint" id="manager-gradient-help">Pick on-brand colours to blend behind the dashboard content.</p>
+                </fieldset>
+                <fieldset class="manager-form__section">
+                  <legend class="manager-form__legend">Tab content editor</legend>
+                  <div class="manager-form__field">
+                    <label class="manager-form__label" for="manager-tab-select">Choose tab</label>
+                    <select class="manager-form__input" id="manager-tab-select" name="tab"></select>
+                  </div>
+                  <div class="manager-form__field">
+                    <label class="manager-form__label" for="manager-tab-title">Tab title</label>
+                    <input class="manager-form__input" type="text" id="manager-tab-title" name="title" required />
+                  </div>
+                  <div class="manager-form__field">
+                    <label class="manager-form__label" for="manager-tab-paragraphs">Intro paragraphs</label>
+                    <textarea
+                      class="manager-form__textarea"
+                      id="manager-tab-paragraphs"
+                      name="paragraphs"
+                      rows="6"
+                      placeholder="Enter each paragraph separated by a blank line"
+                    ></textarea>
+                    <p class="manager-form__hint">Paragraphs render in the same order as written.</p>
+                  </div>
+                  <div class="manager-form__field">
+                    <label class="manager-form__label" for="manager-tab-bullets">Key highlights (one per line)</label>
+                    <textarea
+                      class="manager-form__textarea"
+                      id="manager-tab-bullets"
+                      name="bullets"
+                      rows="5"
+                      placeholder="- Dedicated editorial guidance&#10;- International distribution&#10;- Premium marketing boosts"
+                    ></textarea>
+                  </div>
+                </fieldset>
+                <button class="manager-form__submit" type="submit">Save tab content</button>
+                <p class="manager-form__status" id="manager-form-status" role="status" aria-live="polite"></p>
+              </form>
+              <section class="manager__preview" aria-live="polite" aria-label="Tab content preview">
+                <h2 class="manager__preview-title">Live preview</h2>
+                <p class="manager__preview-intro">Review the copy that visitors see for the selected tab.</p>
+                <h3 class="manager__preview-heading" id="manager-preview-title"></h3>
+                <div class="manager__preview-body" id="manager-preview-body"></div>
+              </section>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+    <footer class="page__footer site-footer">
+      <p class="site-footer__text">© <span id="current-year"></span> Publishing Portfolio. All rights reserved.</p>
+      <nav class="site-footer__social" aria-label="Social media">
+        <ul class="site-footer__social-list">
+          <li class="site-footer__social-item">
+            <a class="site-footer__social-link" href="https://www.facebook.com/yourpublishinghouse" target="_blank" rel="noreferrer noopener">Facebook</a>
+          </li>
+          <li class="site-footer__social-item">
+            <a class="site-footer__social-link" href="https://www.instagram.com/yourpublishinghouse" target="_blank" rel="noreferrer noopener">Instagram</a>
+          </li>
+          <li class="site-footer__social-item">
+            <a class="site-footer__social-link" href="https://www.linkedin.com/company/yourpublishinghouse" target="_blank" rel="noreferrer noopener">LinkedIn</a>
+          </li>
+        </ul>
+      </nav>
+    </footer>
+    <script type="module" src="scripts/manager.js"></script>
+  </body>
+</html>

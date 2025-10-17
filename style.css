@@ -111,6 +111,37 @@ button:focus-visible {
   padding-bottom: var(--space-sm);
 }
 
+.site-header__manager {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: var(--space-sm);
+}
+
+.site-header__manager-link,
+.manager-nav__link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: var(--space-2xs) var(--space-sm);
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+  font-size: var(--font-size-300);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+  transition: color var(--transition-base), border-color var(--transition-base),
+    background-color var(--transition-base);
+}
+
+.site-header__manager-link:hover,
+.site-header__manager-link:focus-visible,
+.manager-nav__link:hover,
+.manager-nav__link:focus-visible {
+  color: var(--color-text-primary);
+  border-color: var(--color-border);
+  background-color: var(--color-surface-alt);
+}
+
 .tabs {
   list-style: none;
   margin: 0;
@@ -633,6 +664,16 @@ button:focus-visible {
 
 .manager__container[data-gradient-direction='bottom'] {
   --manager-gradient-angle: to top;
+}
+
+.manager-nav {
+  margin-top: var(--space-lg);
+  display: flex;
+  justify-content: flex-end;
+}
+
+.manager-page__main {
+  padding-top: var(--space-lg);
 }
 
 .category-page {
